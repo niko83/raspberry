@@ -1,0 +1,20 @@
+version: '3'
+volumes:
+  graphite-data:
+
+services:
+  graphite:
+    image: ennexa/graphite
+    container_name: xmppcs-graphite
+    volumes:
+      - "graphite-data:/opt/graphite/storage/whisper"
+    networks:
+      - xmppcs
+
+  grafana:
+    image: grafana/grafana
+    container_name: xmppcs-grafana
+    networks:
+      - xmppcs
+    ports:
+      - 3000:3000
