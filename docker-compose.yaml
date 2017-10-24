@@ -1,6 +1,8 @@
 version: '3'
 volumes:
   graphite-data:
+networks:
+  - rasberry
 
 services:
   graphite:
