@@ -5,16 +5,16 @@ volumes:
 services:
   graphite:
     image: ennexa/graphite
-    container_name: xmppcs-graphite
+    container_name: rasberry-graphite
     volumes:
       - "graphite-data:/opt/graphite/storage/whisper"
     networks:
-      - xmppcs
+      - rasberry
 
   grafana:
     image: grafana/grafana
-    container_name: xmppcs-grafana
+    container_name: rasberry-grafana
     networks:
-      - xmppcs
+      - rasberry
     ports:
       - 3000:3000
