@@ -8,8 +8,8 @@ CONFIG = {
     "wifi_ssid": "",
     "wifi_pass": "",
     "sensor_pin": 0,
-    "client_id": b"nodemcu1",
-    "topic": b"home",
+    "client_id": "nodemcu1",
+    "topic": "home",
 }
 
 
@@ -44,6 +44,7 @@ def load_config():
 
 
 def main():
+    time.sleep(5)
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
     client.connect()
     print("Connected to {}".format(CONFIG['broker']))
