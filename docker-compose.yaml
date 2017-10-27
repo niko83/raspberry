@@ -1,10 +1,26 @@
 version: '3'
 volumes:
   graphite-data:
+  mqtt_log-data:
+  mqtt_config-data:
+  mqtt_data:
 networks:
   rasberry:
 
 services:
+  mqtt:
+    image: fstehle/rpi-mosquitto
+    container_name: rasberry-mqtt
+    volumes:
+      - "mqtt_log-data:/mqtt/log"
+      - "mqtt_config-data:/mqtt/config:ro"
+      - "mqtt_data:/mqtt/data/"
+    ports:      
+      - '1883:1883'
+      - '9001:9001'
+    networks:
+      - rasberry
+
   graphite:
     image: passy/rpi-docker-graphite-api 
     container_name: rasberry-graphite
