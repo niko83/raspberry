@@ -2,6 +2,7 @@ import network
 import machine
 import time
 from umqtt.simple import MQTTClient
+from machine import Pin
 
 CONFIG = {
     "broker": "",
@@ -48,14 +49,20 @@ def main():
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
     client.connect()
     print("Connected to {}".format(CONFIG['broker']))
+    pin = Pin(14, Pin.IN)
     while True:
         data = sensor_pin.read()
+        move = pin.value()
         client.publish(
-            '{}/{}'.format(CONFIG['topic'], CONFIG['client_id']),
+            '{}/{}/analog'.format(CONFIG['topic'], CONFIG['client_id']),
             bytes(str(data), 'utf-8')
         )
-        print('Sensor state: {}'.format(data))
-        time.sleep(5)
+        client.publish(
+            '{}/{}/move'.format(CONFIG['topic'], CONFIG['client_id']),
+            bytes(str(move), 'utf-8')
+        )
+        print('Sensor state: {} {}'.format(move, data))
+        time.sleep(1)
 
 
 if __name__ == '__main__':
