@@ -15,11 +15,14 @@ sock.connect((CARBON_SERVER, CARBON_PORT))
 
 
 def on_message(client, userdata, message):
-    sock.sendall(
-        'home.nodemcu1 %d %d\n' % (
-            str(message.payload.decode("utf-8")), int(time.time())
-        )
+    m = '%s %d %d\n' % (
+        message.topic.replace('/', '.'),
+        int(message.payload), 
+        int(time.time()),
     )
+        
+    sock.sendall(m)
+    print(m.replace('\n', ''))
 
 
 client = paho.Client("client-001")
@@ -27,4 +30,5 @@ client.on_message = on_message
 client.connect("127.0.0.1")
 client.loop_start()
 
-client.subscribe("home/nodemcu1")
+client.subscribe("home/#")
+time.sleep(999999999)
