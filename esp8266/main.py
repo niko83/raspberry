@@ -10,6 +10,7 @@ CONFIG = {
     "wifi_pass": "",
     "client_id": "nodemcu1",
     "topic": "home",
+    "analog_input": "",
 }
 
 
@@ -38,6 +39,29 @@ def load_config():
         print("Loaded config from /config.json")
 
 
+def calculate_real_value(val):
+    if CONFIG['analog_input'] != 'temp':
+        return 1024 - float(val)
+    elif CONFIG['analog_input'] == 'temp':
+        val = float(val)
+        calibr = (
+            (1024, -30),
+            (940, -25),
+            (720, 5.6),
+            (560, 22),
+            (430, 36),
+            (176, 100),
+            (0, 150),
+        )
+        for i in range(len(calibr)):
+            if val < calibr[i][0] and val >= calibr[i+1][0]:
+                return (
+                    (calibr[i][1] - calibr[i+1][1]) *
+                    (val - calibr[i+1][0]) /
+                    (calibr[i][0] - calibr[i+1][0])
+                ) + calibr[i+1][1]
+
+
 def main():
     time.sleep(5)
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
@@ -45,10 +69,10 @@ def main():
     print("Connected to {}".format(CONFIG['broker']))
     pin = Pin(14, Pin.IN)
     while True:
-        data = sensor_pin.read()
+        data = calculate_real_value(sensor_pin.read())
         move = pin.value()
         client.publish(
-            '{}/{}/analog'.format(CONFIG['topic'], CONFIG['client_id']),
+            '{}/{}/{}'.format(CONFIG['topic'], CONFIG['client_id'], CONFIG['analog_input']),
             bytes(str(data), 'utf-8')
         )
         client.publish(
