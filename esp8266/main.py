@@ -8,7 +8,6 @@ CONFIG = {
     "broker": "",
     "wifi_ssid": "",
     "wifi_pass": "",
-    "sensor_pin": 0,
     "client_id": "nodemcu1",
     "topic": "home",
 }
@@ -23,13 +22,8 @@ def do_connect():
         time.sleep(1)
     print('Connected:', wlan.ifconfig())
 
-client = None
-sensor_pin = None
 
-
-def setup_pins():
-    global sensor_pin
-    sensor_pin = machine.ADC(CONFIG['sensor_pin'])
+sensor_pin = machine.ADC(0)
 
 
 def load_config():
@@ -68,5 +62,4 @@ def main():
 if __name__ == '__main__':
     load_config()
     do_connect()
-    setup_pins()
     main()
