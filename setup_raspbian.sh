@@ -7,7 +7,12 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.16.1/docker-c
 sudo usermod -aG docker pi
 sudo apt-get install vim python3-rpi.gpio ipython3 python-pip  -y
 sudo pip install pip -U
-sudo pip install paho-mqtt
+sudo pip install paho-mqtt supervisor
+
+sudo mkdir /etc/supervisor/
+sudo ln -s /home/pi/raspberry/supervisord.conf /etc/supervisor/supervisord.conf
+sudo mkdir /home/pi/logs
+
 # sudo pip install docker-compose
 
 

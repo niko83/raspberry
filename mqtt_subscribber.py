@@ -19,9 +19,9 @@ def send_to_carbon(topic, value):
     if carbon_sock is None:
         carbon_sock = socket.socket()
         carbon_sock.connect((CARBON_SERVER, CARBON_PORT))
-    message = '%s %s %d\n' % (value, int(time.time()))
+    message = '%s %s %d\n' % (topic, value, int(time.time()))
     carbon_sock.sendall(message)
-    print("Send: topic[%s], value:[%s]" % (topic, value))
+    print("Sent: topic[%s], value:[%s]" % (topic, value))
 
 
 def on_message(client, userdata, message):
