@@ -13,6 +13,8 @@ MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
 MQTT_SUBSRIBER_TOPIC = "home/#"
 
+print("Start script")
+
 
 def send_to_carbon(topic, value):
     global carbon_sock
