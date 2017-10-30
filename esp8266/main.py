@@ -3,14 +3,18 @@ import machine
 import time
 from umqtt.simple import MQTTClient
 from machine import Pin
+import dht
+
+network.WLAN(network.AP_IF).active(False)
 
 CONFIG = {
     "broker": "",
     "wifi_ssid": "",
     "wifi_pass": "",
-    "client_id": "nodemcu1",
+    "client_id": None,
     "topic": "home",
     "analog_input": "",
+    "dht22_pin": None,
 }
 
 
@@ -63,24 +67,46 @@ def calculate_real_value(val):
 
 
 def main():
-    time.sleep(5)
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
+    time.sleep(5)
     client.connect()
     print("Connected to {}".format(CONFIG['broker']))
     pin = Pin(14, Pin.IN)
+    dht_pin = None
+    if CONFIG['dht22_pin'] is not None:
+        dht_pin = dht.DHT22(machine.Pin(CONFIG['dht22_pin']))
+
     while True:
-        data = calculate_real_value(sensor_pin.read())
-        move = pin.value()
-        client.publish(
-            '{}/{}/{}'.format(CONFIG['topic'], CONFIG['client_id'], CONFIG['analog_input']),
-            bytes(str(data), 'utf-8')
-        )
-        client.publish(
-            '{}/{}/move'.format(CONFIG['topic'], CONFIG['client_id']),
-            bytes(str(move), 'utf-8')
-        )
-        print('Sensor state: {} {}'.format(move, data))
-        time.sleep(1)
+        time.sleep(3)
+        try:
+            data = calculate_real_value(sensor_pin.read())
+            move = pin.value()
+            client.publish(
+                '{}/{}/{}'.format(CONFIG['topic'], CONFIG['client_id'], CONFIG['analog_input']),
+                bytes(str(data), 'utf-8')
+            )
+            client.publish(
+                '{}/{}/move'.format(CONFIG['topic'], CONFIG['client_id']),
+                bytes(str(move), 'utf-8')
+            )
+            temp = None
+            humidity = None
+            if dht_pin:
+                dht_pin.measure()
+                temp = dht_pin.temperature()
+                humidity = dht_pin.humidity()
+                client.publish(
+                    '{}/{}/dht_t'.format(CONFIG['topic'], CONFIG['client_id']),
+                    bytes(str(temp), 'utf-8')
+                )
+                client.publish(
+                    '{}/{}/dht_h'.format(CONFIG['topic'], CONFIG['client_id']),
+                    bytes(str(humidity), 'utf-8')
+                )
+
+            print('Sensor state: {} {} DHT:{}C {}%'.format(move, data, temp, humidity))
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':
