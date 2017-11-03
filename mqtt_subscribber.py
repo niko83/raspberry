@@ -27,10 +27,12 @@ def send_to_carbon(topic, value):
 
 
 def on_message(client, userdata, message):
-    send_to_carbon(
-        message.topic.replace('/', '.'),
-        float(message.payload)
-    )
+
+    try:
+        val = float(message.payload)
+    except ValueError:
+        return
+    send_to_carbon(message.topic.replace('/', '.'), val)
 
 client = paho.Client(MQTT_CLIENT_NAME)
 client.on_message = on_message

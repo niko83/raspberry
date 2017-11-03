@@ -1,8 +1,8 @@
 import network
 import machine
+from machine import Pin
 import time
 from umqtt.simple import MQTTClient
-from machine import Pin
 import dht
 
 network.WLAN(network.AP_IF).active(False)
@@ -20,6 +20,7 @@ CONFIG = {
     "topic": "home",
     "analog_input": "",
     "dht22_pin": None,
+    "subscriber": False,
 }
 
 
@@ -29,9 +30,6 @@ def do_connect():
     wlan.connect(CONFIG['wifi_ssid'], CONFIG['wifi_pass'])
     print('Connecting to network...')
     print('Connected to network:', wlan.ifconfig())
-
-
-sensor_pin = machine.ADC(0)
 
 
 def load_config():
@@ -68,54 +66,96 @@ def calculate_real_value(val):
                 ) + calibr[i+1][1]
 
 
-def main():
+def get_mqtt_client(limit_seconds=5):
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
-    while True:
+    sleep = 0.5
+    limit = int(limit_seconds / sleep)
+    while limit > 0:
         try:
             time.sleep(0.5)
-            client.connect()
-            break
-        except Exception as e:
-            print("Connect to mqtt failed: %s %s" % (type(e), e))
 
-    print("Connected to MQTT {}".format(CONFIG['broker']))
-    pin = Pin(14, Pin.IN)
-    dht_pin = None
+            if CONFIG['subscriber']:
+                client.set_callback(on_message)
+                client.connect()
+                client.subscribe(b"/home/#")
+            else:
+                client.connect()
+
+            print("Connected to MQTT {}".format(CONFIG['broker']))
+            return client
+        except Exception as e:
+            limit -= 1
+            print("Connect to mqtt failed: (left attempts %s) %s %s" % (limit, type(e), e))
+
+    machine.deepsleep()
+
+
+def publish_analog(client, sensor_pin):
+    client.publish(
+        '{}/{}/{}'.format(CONFIG['topic'], CONFIG['client_id'], CONFIG['analog_input']),
+        bytes(str(calculate_real_value(sensor_pin.read())), 'utf-8')
+    )
+
+
+def publish_dht22(client, dht_pin):
+    if CONFIG['dht22_pin'] is None:
+        return
+    dht_pin.measure()
+    client.publish(
+        '{}/{}/dht_t'.format(CONFIG['topic'], CONFIG['client_id']),
+        bytes(str(dht_pin.temperature()), 'utf-8')
+    )
+    client.publish(
+        '{}/{}/dht_h'.format(CONFIG['topic'], CONFIG['client_id']),
+        bytes(str(dht_pin.humidity()), 'utf-8')
+    )
+
+
+def on_message(topic, msg):
+    topic = topic.split('.', 1)[-1]
+    if topic == "humidifier":
+        pin = machine.Pin(12, Pin.OUT)
+    elif topic == "lamp":
+        pin = machine.Pin(13, Pin.OUT)
+    else:
+        print("Unknown topic %s" % topic)
+        return
+
+    if msg == b"on":
+        pin.on()
+    elif msg == b"off":
+        pin.off()
+    else:
+        print("Unknown command %s" % msg)
+
+
+def main():
+    client = get_mqtt_client()
+
+    if CONFIG['subscriber']:
+        print('1')
+        try:
+            while True:
+                print('2')
+                client.wait_msg()
+                print('3')
+        except Exception as e:
+            print("wait msg exception: %s" % e)
+            return
+
+    analog_pin = machine.ADC(0)
     if CONFIG['dht22_pin'] is not None:
         dht_pin = dht.DHT22(machine.Pin(CONFIG['dht22_pin']))
 
     while True:
         try:
-            data = calculate_real_value(sensor_pin.read())
-            move = pin.value()
-            client.publish(
-                '{}/{}/{}'.format(CONFIG['topic'], CONFIG['client_id'], CONFIG['analog_input']),
-                bytes(str(data), 'utf-8')
-            )
-            client.publish(
-                '{}/{}/move'.format(CONFIG['topic'], CONFIG['client_id']),
-                bytes(str(move), 'utf-8')
-            )
-            temp = None
-            humidity = None
-            if dht_pin:
-                dht_pin.measure()
-                temp = dht_pin.temperature()
-                humidity = dht_pin.humidity()
-                client.publish(
-                    '{}/{}/dht_t'.format(CONFIG['topic'], CONFIG['client_id']),
-                    bytes(str(temp), 'utf-8')
-                )
-                client.publish(
-                    '{}/{}/dht_h'.format(CONFIG['topic'], CONFIG['client_id']),
-                    bytes(str(humidity), 'utf-8')
-                )
-
-            print('Sensor state: {} {} DHT:{}C {}%'.format(move, data, temp, humidity))
-
+            publish_analog(client, analog_pin)
+            publish_dht22(client, dht_pin)
         except Exception as e:
-            print(e)
-        time.sleep(0.2)
+            print('Sensor exception: %s' % e)
+
+        time.sleep(0.2)  # waiting for sent last client.publish
+        client.disconnect()
         machine.deepsleep()
         time.sleep(10)
 
