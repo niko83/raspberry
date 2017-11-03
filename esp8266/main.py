@@ -7,6 +7,11 @@ import dht
 
 network.WLAN(network.AP_IF).active(False)
 
+rtc = machine.RTC()
+rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
+rtc.alarm(rtc.ALARM0, 120000)  # 2 min
+
+
 CONFIG = {
     "broker": "",
     "wifi_ssid": "",
@@ -23,9 +28,7 @@ def do_connect():
     wlan.active(True)
     wlan.connect(CONFIG['wifi_ssid'], CONFIG['wifi_pass'])
     print('Connecting to network...')
-    if not wlan.isconnected():
-        time.sleep(1)
-    print('Connected:', wlan.ifconfig())
+    print('Connected to network:', wlan.ifconfig())
 
 
 sensor_pin = machine.ADC(0)
@@ -40,7 +43,6 @@ def load_config():
         print("Couldn't load /config.json")
     else:
         CONFIG.update(config)
-        print("Loaded config from /config.json")
 
 
 def calculate_real_value(val):
@@ -68,16 +70,21 @@ def calculate_real_value(val):
 
 def main():
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
-    time.sleep(5)
-    client.connect()
-    print("Connected to {}".format(CONFIG['broker']))
+    while True:
+        try:
+            time.sleep(0.5)
+            client.connect()
+            break
+        except Exception as e:
+            print("Connect to mqtt failed: %s %s" % (type(e), e))
+
+    print("Connected to MQTT {}".format(CONFIG['broker']))
     pin = Pin(14, Pin.IN)
     dht_pin = None
     if CONFIG['dht22_pin'] is not None:
         dht_pin = dht.DHT22(machine.Pin(CONFIG['dht22_pin']))
 
     while True:
-        time.sleep(3)
         try:
             data = calculate_real_value(sensor_pin.read())
             move = pin.value()
@@ -105,9 +112,12 @@ def main():
                 )
 
             print('Sensor state: {} {} DHT:{}C {}%'.format(move, data, temp, humidity))
+
         except Exception as e:
             print(e)
-
+        time.sleep(0.2)
+        machine.deepsleep()
+        time.sleep(10)
 
 if __name__ == '__main__':
     load_config()
