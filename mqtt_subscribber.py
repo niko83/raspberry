@@ -37,6 +37,8 @@ def on_message(client, userdata, message):
 
     if message.topic == 'home/nodemcu2/dht_h' and val < 60:
         client.publish("home/relay/humidifier", "on")
+    if message.topic == 'home/nodemcu2/dht_h' and val < 65:
+        client.publish("home/relay/humidifier", "off")
 
 
 client = paho.Client(MQTT_CLIENT_NAME)
