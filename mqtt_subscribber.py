@@ -14,7 +14,9 @@ MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
 MQTT_SUBSRIBER_TOPIC = "home/#"
 
+print("----------------------")
 print("Start script")
+print("----------------------")
 
 
 def send_to_carbon(topic, value):
@@ -28,6 +30,7 @@ def send_to_carbon(topic, value):
 
 
 def on_message(client, userdata, message):
+    print(message.topic, message.payload)
 
     try:
         val = float(message.payload)
@@ -37,7 +40,7 @@ def on_message(client, userdata, message):
 
     if message.topic == 'home/nodemcu2/dht_h' and val < 60:
         client.publish("home/relay/humidifier", "on")
-    if message.topic == 'home/nodemcu2/dht_h' and val < 65:
+    if message.topic == 'home/nodemcu2/dht_h' and val > 65:
         client.publish("home/relay/humidifier", "off")
 
 
