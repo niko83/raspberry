@@ -2,6 +2,7 @@
 
 import time
 import paho.mqtt.client as paho
+from datetime import datetime
 
 import socket
 
@@ -23,7 +24,7 @@ def send_to_carbon(topic, value):
         carbon_sock.connect((CARBON_SERVER, CARBON_PORT))
     message = '%s %s %d\n' % (topic, value, int(time.time()))
     carbon_sock.sendall(message)
-    print("Sent: topic[%s], value:[%s]" % (topic, value))
+    print("%s Sent: topic[%s], value:[%s]" % (datetime.now(), topic, value))
 
 
 def on_message(client, userdata, message):
