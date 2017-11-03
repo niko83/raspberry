@@ -10,6 +10,8 @@ network.WLAN(network.AP_IF).active(False)
 rtc = machine.RTC()
 rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
 rtc.alarm(rtc.ALARM0, 120000)  # 2 min
+machine.Pin(12, Pin.OUT).off()
+machine.Pin(13, Pin.OUT).off()
 
 
 CONFIG = {
@@ -66,7 +68,7 @@ def calculate_real_value(val):
                 ) + calibr[i+1][1]
 
 
-def get_mqtt_client(limit_seconds=5):
+def get_mqtt_client(limit_seconds=15):
     client = MQTTClient(CONFIG['client_id'], CONFIG['broker'])
     sleep = 0.5
     limit = int(limit_seconds / sleep)
@@ -77,7 +79,7 @@ def get_mqtt_client(limit_seconds=5):
             if CONFIG['subscriber']:
                 client.set_callback(on_message)
                 client.connect()
-                client.subscribe(b"/home/#")
+                client.subscribe("home/relay/#")
             else:
                 client.connect()
 
@@ -112,18 +114,20 @@ def publish_dht22(client, dht_pin):
 
 
 def on_message(topic, msg):
-    topic = topic.split('.', 1)[-1]
+    topic = topic.decode('utf-8')
+    msg = msg.decode('utf-8')
+    topic = topic.split('/')[-1]
     if topic == "humidifier":
         pin = machine.Pin(12, Pin.OUT)
     elif topic == "lamp":
         pin = machine.Pin(13, Pin.OUT)
     else:
-        print("Unknown topic %s" % topic)
+        print('Unknown topic "%s"' % topic)
         return
 
-    if msg == b"on":
+    if msg == "on":
         pin.on()
-    elif msg == b"off":
+    elif msg == "off":
         pin.off()
     else:
         print("Unknown command %s" % msg)

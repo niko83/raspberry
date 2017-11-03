@@ -34,6 +34,10 @@ def on_message(client, userdata, message):
         return
     send_to_carbon(message.topic.replace('/', '.'), val)
 
+    if message.topic == 'home/nodemcu2/dht_h' and val < 60:
+        client.publish("home/relay/humidifier", "on")
+
+
 client = paho.Client(MQTT_CLIENT_NAME)
 client.on_message = on_message
 client.connect(MQTT_HOST)
