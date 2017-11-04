@@ -19,8 +19,10 @@ CONFIG = {
     "wifi_ssid": "",
     "wifi_pass": "",
     "client_id": None,
+    "ip": None,
     "topic": "home",
     "analog_input": "",
+
     "dht22_pin": None,
     "subscriber": False,
 }
@@ -29,6 +31,8 @@ CONFIG = {
 def do_connect():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
+    if CONFIG['ip']:
+        wlan.ifconfig((CONFIG['ip'], '255.255.255.0', '192.168.100.1', '192.168.100.1'))
     wlan.connect(CONFIG['wifi_ssid'], CONFIG['wifi_pass'])
     print('Connecting to network...')
     print('Connected to network:', wlan.ifconfig())
@@ -137,12 +141,9 @@ def main():
     client = get_mqtt_client()
 
     if CONFIG['subscriber']:
-        print('1')
         try:
             while True:
-                print('2')
                 client.wait_msg()
-                print('3')
         except Exception as e:
             print("wait msg exception: %s" % e)
             return
@@ -160,6 +161,7 @@ def main():
 
         time.sleep(0.2)  # waiting for sent last client.publish
         client.disconnect()
+        network.WLAN(network.STA_IF).disconnect()
         machine.deepsleep()
         time.sleep(10)
 
