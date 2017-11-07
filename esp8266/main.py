@@ -4,40 +4,16 @@ import time
 from lib import logging
 from utils.settings import Config
 from utils import wifi, mqtt
+from utils.analog_sensor import calculate_real_value
 from umqtt.simple import MQTTClient
 import dht
 
 
 rtc = machine.RTC()
 rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
-rtc.alarm(rtc.ALARM0, 60000)  # 2 min
-machine.Pin(12, Pin.OUT).off()
-machine.Pin(13, Pin.OUT).off()
+rtc.alarm(rtc.ALARM0, 120000)  # 2 min
 
 log = logging.getLogger('main')
-
-
-
-
-def publish_analog(client, sensor_pin):
-    client.publish(
-        '{}/{}/{}'.format(Config.TOPIC, Config.CLIENT_ID, Config.ANALOG_INPUT),
-        bytes(str(calculate_real_value(sensor_pin.read())), 'utf-8')
-    )
-
-
-def publish_dht22(client, dht_pin):
-    if Config.DHT22_PIN is None:
-        return
-    dht_pin.measure()
-    client.publish(
-        '{}/{}/dht_t'.format(Config.TOPIC, Config.CLIENT_ID),
-        bytes(str(dht_pin.temperature()), 'utf-8')
-    )
-    client.publish(
-        '{}/{}/dht_h'.format(Config.TOPIC, Config.CLIENT_ID),
-        bytes(str(dht_pin.humidity()), 'utf-8')
-    )
 
 
 def on_message(topic, msg):
@@ -60,43 +36,48 @@ def on_message(topic, msg):
         log.warning("Unknown command %s" % msg)
 
 
-def main():
-    client = get_mqtt_client()
+def publish_analog():
+    mqtt.publish(Config.ANALOG_INPUT, calculate_real_value(machine.ADC(0).read()))
 
-    if Config.SUBSCRIBER:
-        try:
-            while True:
-                client.wait_msg()
-        except Exception as e:
-            log.warning("wait msg exception: %s" % e)
-            machine.reset()
-            return
 
-    analog_pin = machine.ADC(0)
-    if Config.DHT22_PIN is not None:
-        dht_pin = dht.DHT22(machine.Pin(Config.DHT22_PIN))
+def dht22_processing(pin):
+    if pin is None:
+        return
 
-    while True:
-        try:
-            publish_analog(client, analog_pin)
-            publish_dht22(client, dht_pin)
-        except Exception as e:
-            print('Sensor exception: %s' % e)
-
-        time.sleep(0.2)  # waiting for sent last client.publish
-        machine.sleep()
+    dht_pin = dht.DHT22(machine.Pin(pin))
+    dht_pin.measure()
+    mqtt.publish('dht_t', dht_pin.temperature())
+    mqtt.publish('dht_h', dht_pin.humidity())
 
 if __name__ == '__main__':
     logging.basicConfig(stream="/main.log")
     log.info("Starting.")
 
     Config.load()
-    wifi.do_connect(Config.WIFI_SSID, Config.WIFI_PASS, Config.IP)
-    mqtt_client = mqtt.get_client(Config.MQTT_CLIENT_ID, Config.MQTT_BROKER)
+    wifi.do_connect()
 
-    mqtt_client.publish("home/asd/asd", "dd")
-    while 1:
-        time.sleep(1)
+    try:
+        publish_analog()
+        dht22_processing(Config.DHT22_PIN)
+    except Exception as e:
+        log.error('Sensor exception: %s', e)
+
+    mqtt.get_client().disconnect()
+    wifi.disconnect()
+    log.info("DEEPLEEP")
+    machine.deepsleep()
+
+    #  if Config.SUBSCRIBER:
+        #  try:
+            #  while True:
+                #  client.wait_msg()
+        #  except Exception as e:
+            #  log.warning("wait msg exception: %s" % e)
+            #  machine.reset()
+            #  return
+
+#  machine.Pin(12, Pin.OUT).off()
+#  machine.Pin(13, Pin.OUT).off()
 
     #  if Config.SUBSCRIBER:
         #  client.set_callback(on_message)

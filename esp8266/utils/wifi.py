@@ -2,6 +2,7 @@ import machine
 import network
 from lib import logging
 import time
+from utils.settings import Config
 log = logging.getLogger(__name__)
 
 network.WLAN(network.AP_IF).active(False)
@@ -9,15 +10,22 @@ network.WLAN(network.AP_IF).active(False)
 _auto_connection_recheck = 120000
 
 
+def disconnect():
+    network.WLAN(network.STA_IF).disconnect()
+
 def check_connection():
-    if network.WLAN(network.STA_IF).isconnected():
-        log.info('WiFi connection OK.')
-    else:
-        log.warning('WiFi connection failed. RESET.')
-        machine.reset()
+    counter = 60
+    while counter > 0:
+        if network.WLAN(network.STA_IF).isconnected():
+            log.info('WiFi connection OK.')
+            return
+        counter -= 1
+        time.sleep(0.5)
+    log.warning('WiFi connection failed. RESET.')
+    machine.reset()
 
 
-def do_connect(ssid, password, ip=None, timeout=10000):
+def do_connect(timeout=10000):
 
     tim = machine.Timer(-1)
     tim.init(
@@ -28,9 +36,9 @@ def do_connect(ssid, password, ip=None, timeout=10000):
 
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    if ip:
-        wlan.ifconfig(ip)
-    wlan.connect(ssid, password)
+    if Config.IP:
+        wlan.ifconfig(Config.IP)
+    wlan.connect(Config.WIFI_SSID, Config.WIFI_PASS)
 
     log.info('Connecting to network...')
     while True:

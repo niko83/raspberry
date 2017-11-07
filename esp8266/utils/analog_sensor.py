@@ -1,3 +1,4 @@
+from utils.settings import Config
 
 
 def calculate_real_value(val):
