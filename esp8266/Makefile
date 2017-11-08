@@ -1,25 +1,19 @@
 deploy: 
-	echo "."; sudo pkill picocom ; \
-	echo "."; sudo ampy --port /dev/ttyUSB0 put main.py /main.py ; \
-	echo "."; (sudo ampy --port /dev/ttyUSB0 rmdir /utils 2> /dev/null || echo "/utils does not exist"); \
-	echo "."; sudo ampy --port /dev/ttyUSB0 put utils; \
-	echo "."; (sudo ampy --port /dev/ttyUSB0 rmdir /lib 2> /dev/null || echo "/lib does not exist") ; \
-	echo "."; sudo ampy --port /dev/ttyUSB0 put lib ; \
-	echo "."; sudo ampy --port /dev/ttyUSB0 put config.json /config.json;
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main.py /main.py ;
+deploy_relay: 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_relay.py /main.py ;
 ls:
-	sudo pkill picocom; \
-	echo '=====ROOT====='; \
-	sudo ampy --port /dev/ttyUSB0 ls; \
-	echo '=====utils====='; \
-	sudo ampy --port /dev/ttyUSB0 ls /utils; \
-	echo '=====lib====='; \
-	sudo ampy --port /dev/ttyUSB0 ls /lib
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
 run:
-	sudo picocom /dev/ttyUSB0 -b115200;
+	sudo pkill picocom; sudo picocom /dev/ttyUSB0 -b115200;
 log:
 	sudo pkill picocom; \
-	sudo ampy --port /dev/ttyUSB0 get /main.log;
+	sudo ampy --port /dev/ttyUSB0 get /main.log >> main.log && \
+	sudo ampy --port /dev/ttyUSB0 rm /main.log;
+	tail main.log
 deploy_micropython:
+	# http://micropython.org/resources/firmware/esp8266-20170823-v1.9.2.bin
 	sudo pkill picocom; \
 	sudo esptool.py --port /dev/ttyUSB0 erase_flash; \
-	sudo esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash --flash_size=detect -fm dio 0 esp8266-20171101-v1.9.3.bin;
+	sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20171101-v1.9.3.bin;
+	# sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1  0 esp8266-20170823-v1.9.2.bin;

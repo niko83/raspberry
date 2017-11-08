@@ -18,6 +18,8 @@ class Config():
     ANALOG_INPUT = ""
     DHT22_PIN = None
 
+    DEEPSLEEP_ENABLED = True
+
     @classmethod
     def load(cls):
         try:

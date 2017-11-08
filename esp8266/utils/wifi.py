@@ -42,13 +42,14 @@ def do_connect(timeout=10000):
 
     log.info('Connecting to network...')
     while True:
-        if not wlan.isconnected():
-            time.sleep(0.2)
-        else:
-            log.info('Successfully Connected to network: %s', wlan.ifconfig())
-            tim.init(
-                period=_auto_connection_recheck,
-                mode=machine.Timer.PERIODIC,
-                callback=lambda t: check_connection(),
-            )
+        if wlan.isconnected():
             return
+        time.sleep(0.2)
+        #  else:
+            #  log.info('Successfully Connected to network: %s', wlan.ifconfig())
+            #  tim.init(
+                #  period=_auto_connection_recheck,
+                #  mode=machine.Timer.PERIODIC,
+                #  callback=lambda t: check_connection(),
+            #  )
+            #  return

@@ -34,6 +34,7 @@ def get_client(timeout=10000):
 
 def publish(topic_key, val):
     c = get_client()
+    sleep(0.2)
     c.publish(
         '{}/{}/{}'.format(
             Config.MQTT_TOPIC_PREFIX,
