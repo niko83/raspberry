@@ -1,0 +1,19 @@
+deploy: 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main.py /main.py ;
+deploy_relay: 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_relay.py /main.py ;
+ls:
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
+run:
+	sudo pkill picocom; sudo picocom /dev/ttyUSB0 -b115200;
+log:
+	sudo pkill picocom; \
+	sudo ampy --port /dev/ttyUSB0 get /main.log >> main.log && \
+	sudo ampy --port /dev/ttyUSB0 rm /main.log;
+	tail main.log
+deploy_micropython:
+	# http://micropython.org/resources/firmware/esp8266-20170823-v1.9.2.bin
+	sudo pkill picocom; \
+	sudo esptool.py --port /dev/ttyUSB0 erase_flash; \
+	sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20171101-v1.9.3.bin;
+	# sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1  0 esp8266-20170823-v1.9.2.bin;
