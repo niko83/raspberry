@@ -40,7 +40,7 @@ def on_message(client, userdata, message):
 
     topic = message.topic.split('/')[-1]
     if topic == 'dht_h':
-        if val <= 75:
+        if val <= 60:
             client.publish("home/relay/humidifier", "on")
         else:
             client.publish("home/relay/humidifier", "off")
