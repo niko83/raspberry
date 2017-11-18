@@ -62,7 +62,7 @@ def on_message(topic, msg):
         if topic == "humidifier":
             client.publish('home/%s/state_humidifier' % _client_id, mqtt_val(10))
         elif topic == 'lamp':
-            client.publish('home/%s/state_lamp' % _client_id, mqtt_val(10))
+            client.publish('home/%s/state_lamp' % _client_id, mqtt_val(5))
     elif msg == "off":
         pin.off()
         if topic == "humidifier":
@@ -73,11 +73,21 @@ def on_message(topic, msg):
         print("Unknown command %s" % msg)
 
 
+
+on_message(b'humidifier', b'on')
+on_message(b'lamp', b'on')
+time.sleep(5)
 on_message(b'humidifier', b'off')
 on_message(b'lamp', b'off')
 client.set_callback(on_message)
 client.subscribe("home/relay/#")
 
-while True:
-    client.wait_msg()
-    time.sleep(0.2)
+try:
+    while True:
+        client.check_msg()
+        time.sleep(1)
+        print("wait_msg")
+        if not wlan.isconnected():
+            machine.reset()
+finally:
+    client.disconnect()

@@ -58,16 +58,23 @@ while True:
     except:
         time.sleep(1)
         c += 1
+        print('mqtt', c)
         if c > 30:
             machine.reset()
 print("Successfully Connected to MQTT")
 
 
-dht_pin = dht.DHT22(machine.Pin(14))
+dht_pin = dht.DHT22(machine.Pin(14))  # D5
 dht_pin.measure()
 client.publish('home/%s/dht_t' % _client_id, mqtt_val(dht_pin.temperature()))
 client.publish('home/%s/dht_h' % _client_id, mqtt_val(dht_pin.humidity()))
 client.publish('home/%s/light' % _client_id, mqtt_val(calculate_real_value(machine.ADC(0).read())))
+
+
+if machine.Pin(4, machine.Pin.IN).value():  # D2
+    client.publish('home/%s/state_window' % _client_id, mqtt_val(0))  # opened window
+else:
+    client.publish('home/%s/state_window' % _client_id, mqtt_val(15))  # closed
 
 time.sleep(0.5)
 rtc = machine.RTC()
