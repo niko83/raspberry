@@ -2,6 +2,8 @@ deploy:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main.py /main.py ;
 deploy_relay: 
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_relay.py /main.py ;
+deploy_and_relay: 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_and_relay.py /main.py ;
 ls:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
 run:
