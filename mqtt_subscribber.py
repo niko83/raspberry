@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
 import time
+import sys
+import os
 import paho.mqtt.client as paho
 from datetime import datetime
-from timedelta import timedelta
+from datetime import timedelta
+import threading
+import signal
 
 import socket
 
@@ -26,22 +30,27 @@ measure_min_delta = timedelta(seconds=300)
 NORMALIZATORS = {
     'dht_t': lambda x: round(x/2, 1)*2,
     'dht_h': round,
-    'light': lambda x: round((1024 - x)/1024/2) * 2,
+    'light': lambda x: round((1024.0 - x)/1024/0.02) * 2,
 }
 
 
 def DEFAULT_NORMALIZATOR(x):
     return x
 
+_IS_RUNNING = True
 
 def processing():
-    humitidy_processing()
+    client = paho.Client(MQTT_CLIENT_NAME + '2')
+    client.connect(MQTT_HOST)
+    while _IS_RUNNING:
+	humitidy_processing()
+	time.sleep(5)
 
 
 def humitidy_processing():
     gisteresis = 2
     humidity_limit = 50
-    key = 'asd'
+    key = '370c3800'
     #  while True:
     last_humidity = last_values.get("home.%s.dht_h" % key)
     last_temperature = last_values.get("home.%s.dht_t" % key)
@@ -50,15 +59,24 @@ def humitidy_processing():
         last_humidity is None or
         last_temperature[1] + measure_min_delta * 2 < datetime.now() or
         last_humidity[1] + measure_min_delta * 2 < datetime.now() or
-        last_temperature[0] < 20 or
+        last_temperature[0] < 19 or
         last_humidity[0] > humidity_limit + gisteresis
     ):
         client.publish("home/relay/humidifier", "off")
+        last_humidity = [None, None] if last_humidity is None else last_humidity
+        last_temperature = [None, None] if last_temperature is None else last_temperature
+        print("sent humidifier off (%s, %s)" % (last_humidity[0], last_temperature[0]))
         return
 
     if last_humidity[0] < humidity_limit:
         client.publish("home/relay/humidifier", "on")
+        last_humidity = [None, None] if last_humidity is None else last_humidity
+        last_temperature = [None, None] if last_temperature is None else last_temperature
+        print("sent humidifier on (%s, %s)" % (last_humidity[0], last_temperature[0]))
+
         return
+
+
 
 
 def send_to_carbon(topic, value):
@@ -75,29 +93,30 @@ def send_to_carbon(topic, value):
 
     normalized_value = normalizator(value)
 
-    last_value = last_values.get(topic, [None, None])
+    last_value = last_values.get(topic, [None, datetime.now()])
     if (
         last_value[0] != normalized_value or
         datetime.now() - last_value[1] > measure_min_delta
     ):
         carbon_sock.sendall('%s %s %d\n' % (topic, normalized_value, int(time.time())))
-        print("Sent to carbon. Delta(%s)" % datetime.now() - last_value[1])
+        print("Sent to carbon %s" % (normalized_value))
         last_values[topic] = (normalized_value, datetime.now())
-    else:
-        print("Skipped sent to carbon.")
 
 
 def on_message(client, userdata, message):
-    print("Get topic: %s  payload:%s" % (message.topic, message.payload))
+    if "home/relay" in message.topic:
+        return
+
+    print("get. Topic: %s Payload:%s" % (message.topic, message.payload))
+    sys.stdout.flush()
 
     try:
         val = float(message.payload)
     except ValueError:
-        print("Skipped")
+        print("Skipped not float")
         return
 
     send_to_carbon(message.topic.replace('/', '.'), val)
-    processing()
 
 client = paho.Client(MQTT_CLIENT_NAME)
 client.on_message = on_message
@@ -105,4 +124,16 @@ client.connect(MQTT_HOST)
 client.loop_start()
 
 client.subscribe(MQTT_SUBSRIBER_TOPIC)
+
+
+def signal_handler(signal, frame):
+    global _IS_RUNNING
+    print("stopping...")
+    _IS_RUNNING = False
+
+signal.signal(signal.SIGINT, signal_handler)
+t = threading.Thread(target=processing)
+t.setDaemon(True)
+t.start()
+print("1")
 time.sleep(999999999)
