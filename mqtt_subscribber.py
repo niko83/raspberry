@@ -31,6 +31,7 @@ NORMALIZATORS = {
     'dht_t': lambda x: round(x/2, 1)*2,
     'dht_h': round,
     'light': lambda x: round((1024.0 - x)/1024/0.02) * 2,
+    'plant': lambda x: round((1024.0 - x)/1024/0.01),
 }
 
 
@@ -59,7 +60,7 @@ def humitidy_processing():
         last_humidity is None or
         last_temperature[1] + measure_min_delta * 2 < datetime.now() or
         last_humidity[1] + measure_min_delta * 2 < datetime.now() or
-        last_temperature[0] < 19 or
+        last_temperature[0] < 18.2 or
         last_humidity[0] > humidity_limit + gisteresis
     ):
         client.publish("home/relay/humidifier", "off")

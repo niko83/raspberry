@@ -17,15 +17,16 @@ print("----------------------")
 print("Start script")
 print("----------------------")
 
-
+cnt = 0
 while True:
     client = paho.Client(MQTT_CLIENT_NAME)
     client.connect(MQTT_HOST)
+
     if datetime.time(19, 00) < datetime.datetime.now().time() < datetime.time(20, 30):
         print("on")
-	client.publish("home/relay/lamp", "on");
+	client.publish("home/relay/lamp", "off");
     else: 
         print("off")
-	client.publish("home/relay/lamp", "off");
+	client.publish("home/relay/lamp", "on");
     time.sleep(300)
 
