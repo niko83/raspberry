@@ -8,7 +8,7 @@ import paho.mqtt.client as paho
 import threading
 
 
-#_lock = threading.Lock()
+_lock = threading.Lock()
 
 MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
@@ -83,20 +83,15 @@ def on_message(client, userdata, message):
         DEFAULT_NORMALIZATOR
     )
 
-    #_lock.acquire()
+    _lock.acquire()
     try:
         last_values[message.topic] = (normalizator(value), time.time())
         print(last_values)
     finally:
         pass
-        #_lock.release()
+        _lock.release()
 
 
-client = paho.Client(MQTT_CLIENT_NAME)
-client.on_message = on_message
-client.connect(MQTT_HOST)
-client.subscribe(MQTT_SUBSRIBER_TOPIC)
-client.loop_forrever()
 
 
 
@@ -113,7 +108,7 @@ def _metric(metric_name, val, time, **labels):
 
 class ThingsResource(object):
     def on_get(self, req, resp):
-        #_lock.acquire()
+        _lock.acquire()
         processing()
         try:
             data = []
@@ -133,11 +128,32 @@ class ThingsResource(object):
                 last_values.pop(key)
         finally:
             pass
-            #_lock.release()
+            _lock.release()
 
         resp.body = "\n".join(data)
 
-app = falcon.API()
-app.add_route('/metrics', ThingsResource())
-httpd = simple_server.make_server('127.0.0.1', 8000, app)
-httpd.serve_forever()
+
+def process_metric():
+    app = falcon.API()
+    app.add_route('/metrics', ThingsResource())
+    httpd = simple_server.make_server('127.0.0.1', 8000, app)
+    httpd.serve_forever()
+
+
+def process_mqtt_events():
+    client = paho.Client(MQTT_CLIENT_NAME)
+    client.on_message = on_message
+    client.connect(MQTT_HOST)
+    client.subscribe(MQTT_SUBSRIBER_TOPIC)
+    client.loop_forrever()
+
+t = threading.Thread(target=process_metric)
+t.setDaemon(True)
+t.start()
+
+t = threading.Thread(target=process_mqtt_events)
+t.setDaemon(True)
+t.start()
+
+print("xxx")
+
