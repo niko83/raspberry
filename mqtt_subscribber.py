@@ -155,5 +155,5 @@ t = threading.Thread(target=process_mqtt_events)
 t.setDaemon(True)
 t.start()
 
-print("xxx")
+time.sleep(9999999999)
 
