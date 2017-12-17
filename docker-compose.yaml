@@ -34,5 +34,4 @@ services:
     container_name: rasberry-grafana
     networks:
       - rasberry
-    ports:
-      - 3000:3000
+    network_mode: "host"
