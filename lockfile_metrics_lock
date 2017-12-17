@@ -1,0 +1,51 @@
+
+===================
+2017-12-17 17:57:42.530166 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:42.531384 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:47.446122 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:48.506439 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:51.514876 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:51.516494 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:51.517981 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:57:52.089200 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:01.812719 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:01.814375 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:01.815866 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:02.364427 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:12.065948 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:12.067606 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:12.069059 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 17:58:12.138711 <function on_message at 0x765da370> (<paho.mqtt.client.Client object at 0x765cff70>, None, <paho.mqtt.client.MQTTMessage object at 0x765da330>) {}
+
+===================
+2017-12-17 18:03:55.912227 <function on_message at 0x76675c70> (<paho.mqtt.client.Client object at 0x766802b0>, None, <paho.mqtt.client.MQTTMessage object at 0x76675cf0>) {}

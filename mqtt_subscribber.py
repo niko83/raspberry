@@ -6,6 +6,8 @@ import paho.mqtt.client as paho
 from locker import one_thread_restriction
 import settings
 import logging
+import json
+import metrics_file
 
 logger = logging.getLogger("smarthome")
 
@@ -14,8 +16,6 @@ MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
 MQTT_SUBSRIBER_TOPIC = "home/#"
 
-
-last_values = {}
 
 NORMALIZATORS = {
     'dht_t': lambda x: round(x/2, 1)*2,
@@ -48,8 +48,9 @@ def on_message(client, userdata, message):
         message.topic.split('/')[-1],
         DEFAULT_NORMALIZATOR
     )
-
+    last_values = metrics_file.read()
     last_values[message.topic] = (normalizator(value), time.time())
+    metrics_file.write(last_values)
 
 
 client = paho.Client(MQTT_CLIENT_NAME)
