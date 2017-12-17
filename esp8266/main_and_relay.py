@@ -79,7 +79,7 @@ client.set_callback(on_message)
 client.subscribe("home/relay/#")
 
 
-def push_meassure(last_value):
+def push_meassure():
     dht_pin = dht.DHT22(machine.Pin(14))  # D5
     dht_pin.measure()
 
