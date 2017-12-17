@@ -1,6 +1,6 @@
 version: '3'
 volumes:
-  graphite-data:
+  prometheus-data:
   mqtt_log-data:
   mqtt_config-data:
   mqtt_data:
@@ -21,18 +21,16 @@ services:
     networks:
       - rasberry
 
-        #  graphite:
-        #    image: passy/rpi-docker-graphite-api 
-        #    container_name: rasberry-graphite
-        #    volumes:
-        #      - "graphite-data:/opt/graphite/storage/whisper"
-        #    ports:
-        #      - '8080:8080'
-        #    networks:
-        #      - rasberry
+  prometheus:
+    image: ajeetraina/prometheus-armv7
+    container_name: prometheus
+    volumes:
+      - "prometheus_data:/prometheus"
+      - "prometheus.yml:/etc/prometheus/prometheus.yml"
+    network_mode: "host"
 
   grafana:
-    image: fg2it/grafana-armhf:v4.5.2
+    image: fg2it/grafana-armhf:v4.6.2
     container_name: rasberry-grafana
     networks:
       - rasberry
