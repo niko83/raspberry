@@ -6,9 +6,10 @@ import falcon
 import sys
 import paho.mqtt.client as paho
 import threading
+from pprint import pprint
 
 
-_lock = threading.Lock()
+#_lock = threading.Lock()
 
 MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
@@ -83,16 +84,13 @@ def on_message(client, userdata, message):
         DEFAULT_NORMALIZATOR
     )
 
-    _lock.acquire()
+    #_lock.acquire()
     try:
         last_values[message.topic] = (normalizator(value), time.time())
-        print(last_values)
+        pprint(last_values)
     finally:
         pass
-        _lock.release()
-
-
-
+        #_lock.release()
 
 
 def _metric(metric_name, val, time, **labels):
@@ -108,14 +106,16 @@ def _metric(metric_name, val, time, **labels):
 
 class ThingsResource(object):
     def on_get(self, req, resp):
-        _lock.acquire()
+        #_lock.acquire()
+
+
         processing()
         try:
             data = []
             for key, (value, _time) in last_values.items():
 
                 try:
-                    namespace, wifipoint, _type = key.split('/', 2)
+                    namespace, wifipoint, name = key.split('/', 2)
                 except ValueError:
                     print("error: %s" % key)
                     last_values.pop(key)
@@ -123,15 +123,21 @@ class ThingsResource(object):
                 data.append(_metric('val', value, _time, **{
                     'namespace': namespace,
                     'wifipoint': wifipoint,
-                    'type': _type,
+                    'name': name,
                 }))
                 last_values.pop(key)
         finally:
             pass
-            _lock.release()
+            #_lock.release()
 
         resp.body = "\n".join(data)
 
+
+client = paho.Client(MQTT_CLIENT_NAME)
+client.on_message = on_message
+client.connect(MQTT_HOST)
+client.subscribe(MQTT_SUBSRIBER_TOPIC)
+client.loop_start()
 
 def process_metric():
     app = falcon.API()
@@ -140,20 +146,20 @@ def process_metric():
     httpd.serve_forever()
 
 
-def process_mqtt_events():
-    client = paho.Client(MQTT_CLIENT_NAME)
-    client.on_message = on_message
-    client.connect(MQTT_HOST)
-    client.subscribe(MQTT_SUBSRIBER_TOPIC)
-    client.loop_forever()
+# def process_mqtt_events():
+#     client = paho.Client(MQTT_CLIENT_NAME)
+#     client.on_message = on_message
+#     client.connect(MQTT_HOST)
+#     client.subscribe(MQTT_SUBSRIBER_TOPIC)
+#     client.loop_read()
 
 t = threading.Thread(target=process_metric)
 t.setDaemon(True)
 t.start()
 
-t = threading.Thread(target=process_mqtt_events)
-t.setDaemon(True)
-t.start()
-
+# t = threading.Thread(target=process_mqtt_events)
+# t.setDaemon(True)
+# t.start()
+# 
 time.sleep(9999999999)
 
