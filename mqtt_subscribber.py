@@ -143,7 +143,7 @@ def process_mqtt_events():
     client.on_message = on_message
     client.connect(MQTT_HOST)
     client.subscribe(MQTT_SUBSRIBER_TOPIC)
-    client.loop_forewer()
+    client.loop_start()
 
 t = threading.Thread(target=process_metric)
 t.setDaemon(True)
@@ -154,4 +154,3 @@ t.setDaemon(True)
 t.start()
 
 time.sleep(9999999999)
-
