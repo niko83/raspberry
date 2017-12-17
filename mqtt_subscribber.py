@@ -8,7 +8,7 @@ import paho.mqtt.client as paho
 import threading
 
 
-_lock = threading.Lock()
+#_lock = threading.Lock()
 
 MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
@@ -83,19 +83,21 @@ def on_message(client, userdata, message):
         DEFAULT_NORMALIZATOR
     )
 
-    _lock.acquire()
+    #_lock.acquire()
     try:
         last_values[message.topic] = (normalizator(value), time.time())
+        print(last_values)
     finally:
-        _lock.release()
+        pass
+        #_lock.release()
 
 
 client = paho.Client(MQTT_CLIENT_NAME)
 client.on_message = on_message
 client.connect(MQTT_HOST)
-client.loop_start()
-
 client.subscribe(MQTT_SUBSRIBER_TOPIC)
+client.loop_forrever()
+
 
 
 def _metric(metric_name, val, time, **labels):
@@ -111,7 +113,7 @@ def _metric(metric_name, val, time, **labels):
 
 class ThingsResource(object):
     def on_get(self, req, resp):
-        _lock.acquire()
+        #_lock.acquire()
         processing()
         try:
             data = []
@@ -130,7 +132,8 @@ class ThingsResource(object):
                 }))
                 last_values.pop(key)
         finally:
-            _lock.release()
+            pass
+            #_lock.release()
 
         resp.body = "\n".join(data)
 
