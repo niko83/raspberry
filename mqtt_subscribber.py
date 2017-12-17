@@ -114,13 +114,20 @@ class ThingsResource(object):
         _lock.acquire()
         processing()
         try:
+            data = []
             for key, (value, _time) in last_values.items():
-                namespace, wifipoint, _type = key.split('/', 2)
-                data = _metric('val', value, _time, {
+
+                try:
+                    namespace, wifipoint, _type = key.split('/', 2)
+                except ValueError:
+                    print("error: %s" % key)
+                    last_values.pop(key)
+                    continue
+                data.append(_metric('val', value, _time, **{
                     'namespace': namespace,
                     'wifipoint': wifipoint,
                     'type': _type,
-                })
+                }))
                 last_values.pop(key)
         finally:
             _lock.release()
