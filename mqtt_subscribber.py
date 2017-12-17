@@ -9,9 +9,9 @@ import threading
 from pprint import pprint
 
 
-#_lock = threading.Lock()
+_lock = threading.Lock()
 
-MQTT_CLIENT_NAME = 'raspberry_consumer_client'
+MQTT_CLIENT_NAME = 'smarthome_client'
 MQTT_HOST = '127.0.0.1'
 MQTT_SUBSRIBER_TOPIC = "home/#"
 
@@ -34,7 +34,7 @@ def DEFAULT_NORMALIZATOR(x):
 
 
 def processing():
-    client = paho.Client(MQTT_CLIENT_NAME)
+    client = paho.Client(MQTT_CLIENT_NAME + "metrics_processing")
     client.connect(MQTT_HOST)
     humitidy_processing(client)
 
@@ -84,13 +84,12 @@ def on_message(client, userdata, message):
         DEFAULT_NORMALIZATOR
     )
 
-    #_lock.acquire()
+    _lock.acquire()
     try:
         last_values[message.topic] = (normalizator(value), time.time())
         pprint(last_values)
     finally:
-        pass
-        #_lock.release()
+        _lock.release()
 
 
 def _metric(metric_name, val, time, **labels):
@@ -106,8 +105,7 @@ def _metric(metric_name, val, time, **labels):
 
 class ThingsResource(object):
     def on_get(self, req, resp):
-        #_lock.acquire()
-
+        _lock.acquire()
 
         processing()
         try:
@@ -127,17 +125,11 @@ class ThingsResource(object):
                 }))
                 last_values.pop(key)
         finally:
-            pass
-            #_lock.release()
+            _lock.release()
 
         resp.body = "\n".join(data)
 
 
-client = paho.Client(MQTT_CLIENT_NAME)
-client.on_message = on_message
-client.connect(MQTT_HOST)
-client.subscribe(MQTT_SUBSRIBER_TOPIC)
-client.loop_start()
 
 def process_metric():
     app = falcon.API()
@@ -146,20 +138,20 @@ def process_metric():
     httpd.serve_forever()
 
 
-# def process_mqtt_events():
-#     client = paho.Client(MQTT_CLIENT_NAME)
-#     client.on_message = on_message
-#     client.connect(MQTT_HOST)
-#     client.subscribe(MQTT_SUBSRIBER_TOPIC)
-#     client.loop_read()
+def process_mqtt_events():
+    client = paho.Client(MQTT_CLIENT_NAME + "_subscribber")
+    client.on_message = on_message
+    client.connect(MQTT_HOST)
+    client.subscribe(MQTT_SUBSRIBER_TOPIC)
+    client.loop_forewer()
 
 t = threading.Thread(target=process_metric)
 t.setDaemon(True)
 t.start()
 
-# t = threading.Thread(target=process_mqtt_events)
-# t.setDaemon(True)
-# t.start()
-# 
+t = threading.Thread(target=process_mqtt_events)
+t.setDaemon(True)
+t.start()
+
 time.sleep(9999999999)
 
