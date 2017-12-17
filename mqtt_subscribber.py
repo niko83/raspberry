@@ -78,8 +78,6 @@ def humitidy_processing():
         return
 
 
-
-
 def send_to_carbon(topic, value):
 
     normalizator = NORMALIZATORS.get(

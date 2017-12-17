@@ -6,8 +6,9 @@ curl -sSL https://get.docker.com | sh
 sudo curl -L https://github.com/docker/compose/releases/download/1.16.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
 sudo usermod -aG docker pi
 sudo apt-get install vim python3-rpi.gpio ipython3 python-pip  -y
+
 sudo pip install pip -U
-sudo pip install paho-mqtt supervisor
+sudo pip install paho-mqtt supervisor falcon
 
 sudo mkdir /etc/supervisor/
 sudo ln -s /home/pi/raspberry/supervisord.conf /etc/supervisor/supervisord.conf
@@ -16,11 +17,11 @@ sudo mkdir /home/pi/logs
 # sudo pip install docker-compose
 
 
-sudo apt-get install graphite-carbon
+# sudo apt-get install graphite-carbon
 # /etc/default/graphite-carbon
 # CARBON_CACHE_ENABLED=true
-sudo apt-get install python python-pip build-essential python-dev libcairo2-dev libffi-dev
-sudo pip install graphite-api
+# sudo apt-get install python python-pip build-essential python-dev libcairo2-dev libffi-dev
+# sudo pip install graphite-api
 
 
 #sudo apt-get install apache2 libapache2-mod-wsgi
