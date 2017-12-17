@@ -35,10 +35,10 @@ def DEFAULT_NORMALIZATOR(x):
 def processing():
     client = paho.Client(MQTT_CLIENT_NAME)
     client.connect(MQTT_HOST)
-    humitidy_processing()
+    humitidy_processing(client)
 
 
-def humitidy_processing():
+def humitidy_processing(client):
     gisteresis = 2
     humidity_limit = 50
     key = '370c3800'
@@ -145,7 +145,7 @@ def process_mqtt_events():
     client.on_message = on_message
     client.connect(MQTT_HOST)
     client.subscribe(MQTT_SUBSRIBER_TOPIC)
-    client.loop_forrever()
+    client.loop_forever()
 
 t = threading.Thread(target=process_metric)
 t.setDaemon(True)
