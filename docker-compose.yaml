@@ -25,8 +25,8 @@ services:
     image: ajeetraina/prometheus-armv7
     container_name: prometheus
     volumes:
-      - "prometheus_data:/prometheus"
-      - "prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "prometheus-data:/prometheus"
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
     network_mode: "host"
 
   grafana:
