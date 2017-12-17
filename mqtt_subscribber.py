@@ -4,18 +4,11 @@ import time
 from wsgiref import simple_server
 import falcon
 import sys
-import os
 import paho.mqtt.client as paho
-from datetime import datetime
-from datetime import timedelta
 import threading
-import signal
 
-import socket
 
-carbon_sock = None
-CARBON_SERVER = '0.0.0.0'
-CARBON_PORT = 2003
+_lock = threading.Lock()
 
 MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
@@ -26,8 +19,6 @@ print("Start script")
 print("----------------------")
 
 last_values = {}
-
-measure_min_delta = timedelta(seconds=10)
 
 NORMALIZATORS = {
     'dht_t': lambda x: round(x/2, 1)*2,
@@ -40,28 +31,22 @@ NORMALIZATORS = {
 def DEFAULT_NORMALIZATOR(x):
     return x
 
-_IS_RUNNING = True
 
 def processing():
-    client = paho.Client(MQTT_CLIENT_NAME + '2')
+    client = paho.Client(MQTT_CLIENT_NAME)
     client.connect(MQTT_HOST)
-    while _IS_RUNNING:
-	humitidy_processing()
-	time.sleep(5)
+    humitidy_processing()
 
 
 def humitidy_processing():
     gisteresis = 2
     humidity_limit = 50
     key = '370c3800'
-    #  while True:
     last_humidity = last_values.get("home.%s.dht_h" % key)
     last_temperature = last_values.get("home.%s.dht_t" % key)
     if (
         last_temperature is None or
         last_humidity is None or
-        last_temperature[1] + measure_min_delta * 2 < datetime.now() or
-        last_humidity[1] + measure_min_delta * 2 < datetime.now() or
         last_temperature[0] < 18.2 or
         last_humidity[0] > humidity_limit + gisteresis
     ):
@@ -80,30 +65,6 @@ def humitidy_processing():
         return
 
 
-def send_to_carbon(topic, value):
-
-    normalizator = NORMALIZATORS.get(
-        topic.split('.')[-1],
-        DEFAULT_NORMALIZATOR
-    )
-
-    global carbon_sock
-    if carbon_sock is None:
-        carbon_sock = socket.socket()
-        carbon_sock.connect((CARBON_SERVER, CARBON_PORT))
-
-    normalized_value = normalizator(value)
-
-    last_value = last_values.get(topic, [None, datetime.now()])
-    if (
-        last_value[0] != normalized_value or
-        datetime.now() - last_value[1] > measure_min_delta
-    ):
-        carbon_sock.sendall('%s %s %d\n' % (topic, normalized_value, int(time.time())))
-        print("Sent to carbon %s" % (normalized_value))
-        last_values[topic] = (normalized_value, datetime.now())
-
-
 def on_message(client, userdata, message):
     if "home/relay" in message.topic:
         return
@@ -112,12 +73,22 @@ def on_message(client, userdata, message):
     sys.stdout.flush()
 
     try:
-        val = float(message.payload)
+        value = float(message.payload)
     except ValueError:
         print("Skipped not float")
         return
 
-    send_to_carbon(message.topic.replace('/', '.'), val)
+    normalizator = NORMALIZATORS.get(
+        message.topic.split('/')[-1],
+        DEFAULT_NORMALIZATOR
+    )
+
+    _lock.acquire()
+    try:
+        last_values[message.topic] = (normalizator(value), time.time())
+    finally:
+        _lock.release()
+
 
 client = paho.Client(MQTT_CLIENT_NAME)
 client.on_message = on_message
@@ -127,27 +98,36 @@ client.loop_start()
 client.subscribe(MQTT_SUBSRIBER_TOPIC)
 
 
-def signal_handler(signal, frame):
-    global _IS_RUNNING
-    print("stopping...")
-    _IS_RUNNING = False
+def _metric(metric_name, val, time, **labels):
+    labels_str = ''
+    if labels:
+        labels_list = []
+        for name, l_val in labels.items():
+            labels_list.append('%s="%s"' % (name, l_val))
+        labels_str = "{" + ','.join(labels_list) + "}"
 
-signal.signal(signal.SIGINT, signal_handler)
-t = threading.Thread(target=processing)
-t.setDaemon(True)
-t.start()
-time.sleep(999999999)
+    return "%s%s %s %s000" % (metric_name, labels_str, val, int(time))
 
-# class ThingsResource(object):
-#     def on_get(self, req, resp):
-#         """Handles GET requests"""
-#         resp.status = falcon.HTTP_200  # This is the default status
-#         resp.body = ('\nTwo things awe me most, the starry sky '
-#                      'above me and the moral law within me.\n'
-#                      '\n'
-#                      '    ~ Immanuel Kant\n\n')
-# 
-# app = falcon.API()
-# app.add_route('/metrics', ThingsResource())
-# httpd = simple_server.make_server('127.0.0.1', 8000, app)
-# httpd.serve_forever()
+
+class ThingsResource(object):
+    def on_get(self, req, resp):
+        _lock.acquire()
+        processing()
+        try:
+            for key, (value, _time) in last_values.items():
+                namespace, wifipoint, _type = key.split('/', 2)
+                data = _metric('val', value, _time, {
+                    'namespace': namespace,
+                    'wifipoint': wifipoint,
+                    'type': _type,
+                })
+                last_values.pop(key)
+        finally:
+            _lock.release()
+
+        resp.body = "\n".join(data)
+
+app = falcon.API()
+app.add_route('/metrics', ThingsResource())
+httpd = simple_server.make_server('127.0.0.1', 8000, app)
+httpd.serve_forever()
