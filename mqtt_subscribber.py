@@ -1,23 +1,19 @@
 #!/usr/bin/env python
 
 import time
-from wsgiref import simple_server
-import falcon
 import sys
 import paho.mqtt.client as paho
-import threading
-from pprint import pprint
+from locker import one_thread_restriction
+import settings
+import logging
 
+logger = logging.getLogger("smarthome")
 
-#_lock = threading.Lock()
 
 MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
 MQTT_SUBSRIBER_TOPIC = "home/#"
 
-print("----------------------")
-print("Start script")
-print("----------------------")
 
 last_values = {}
 
@@ -33,44 +29,13 @@ def DEFAULT_NORMALIZATOR(x):
     return x
 
 
-def processing():
-    client = paho.Client(MQTT_CLIENT_NAME)
-    client.connect(MQTT_HOST)
-    humitidy_processing(client)
-
-
-def humitidy_processing(client):
-    gisteresis = 2
-    humidity_limit = 50
-    key = '370c3800'
-    last_humidity = last_values.get("home.%s.dht_h" % key)
-    last_temperature = last_values.get("home.%s.dht_t" % key)
-    if (
-        last_temperature is None or
-        last_humidity is None or
-        last_temperature[0] < 18.2 or
-        last_humidity[0] > humidity_limit + gisteresis
-    ):
-        client.publish("home/relay/humidifier", "off")
-        last_humidity = [None, None] if last_humidity is None else last_humidity
-        last_temperature = [None, None] if last_temperature is None else last_temperature
-        print("sent humidifier off (%s, %s)" % (last_humidity[0], last_temperature[0]))
-        return
-
-    if last_humidity[0] < humidity_limit:
-        client.publish("home/relay/humidifier", "on")
-        last_humidity = [None, None] if last_humidity is None else last_humidity
-        last_temperature = [None, None] if last_temperature is None else last_temperature
-        print("sent humidifier on (%s, %s)" % (last_humidity[0], last_temperature[0]))
-
-        return
-
-
+@one_thread_restriction(settings.LOCK_KEY)
 def on_message(client, userdata, message):
+    print("Topic: %s Payload:%s" % (message.topic, message.payload))
+
     if "home/relay" in message.topic:
         return
 
-    print("get. Topic: %s Payload:%s" % (message.topic, message.payload))
     sys.stdout.flush()
 
     try:
@@ -84,82 +49,18 @@ def on_message(client, userdata, message):
         DEFAULT_NORMALIZATOR
     )
 
-    #_lock.acquire()
-    try:
-        last_values[message.topic] = (normalizator(value), time.time())
-        pprint(last_values)
-    finally:
-        pass
-        #_lock.release()
-
-
-def _metric(metric_name, val, time, **labels):
-    labels_str = ''
-    if labels:
-        labels_list = []
-        for name, l_val in labels.items():
-            labels_list.append('%s="%s"' % (name, l_val))
-        labels_str = "{" + ','.join(labels_list) + "}"
-
-    return "%s%s %s %s000" % (metric_name, labels_str, val, int(time))
-
-
-class ThingsResource(object):
-    def on_get(self, req, resp):
-        #_lock.acquire()
-
-
-        processing()
-        try:
-            data = []
-            for key, (value, _time) in last_values.items():
-
-                try:
-                    namespace, wifipoint, name = key.split('/', 2)
-                except ValueError:
-                    print("error: %s" % key)
-                    last_values.pop(key)
-                    continue
-                data.append(_metric('val', value, _time, **{
-                    'namespace': namespace,
-                    'wifipoint': wifipoint,
-                    'name': name,
-                }))
-                last_values.pop(key)
-        finally:
-            pass
-            #_lock.release()
-
-        resp.body = "\n".join(data)
+    last_values[message.topic] = (normalizator(value), time.time())
 
 
 client = paho.Client(MQTT_CLIENT_NAME)
 client.on_message = on_message
-client.connect(MQTT_HOST)
+while True:
+    try:
+        client.connect(MQTT_HOST)
+        break
+    except Exception as e:
+        logger.error("Can not connect to mqtt %s", MQTT_HOST)
+        time.sleep(5)
+
 client.subscribe(MQTT_SUBSRIBER_TOPIC)
-client.loop_start()
-
-def process_metric():
-    app = falcon.API()
-    app.add_route('/metrics', ThingsResource())
-    httpd = simple_server.make_server('127.0.0.1', 8000, app)
-    httpd.serve_forever()
-
-
-# def process_mqtt_events():
-#     client = paho.Client(MQTT_CLIENT_NAME)
-#     client.on_message = on_message
-#     client.connect(MQTT_HOST)
-#     client.subscribe(MQTT_SUBSRIBER_TOPIC)
-#     client.loop_read()
-
-t = threading.Thread(target=process_metric)
-t.setDaemon(True)
-t.start()
-
-# t = threading.Thread(target=process_mqtt_events)
-# t.setDaemon(True)
-# t.start()
-# 
-time.sleep(9999999999)
-
+client.loop_forever()

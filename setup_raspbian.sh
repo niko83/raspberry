@@ -26,11 +26,11 @@ sudo mkdir /home/pi/logs
 
 #sudo apt-get install apache2 libapache2-mod-wsgi
 
-sudo unlink /etc/apache2/sites-enabled/000-default.conf
-sudo ln -s /home/pi/raspberry/graphite.conf /etc/apache2/sites-enabled/graphite.conf
-sudo ln -s /home/pi/raspberry/graphite-api.yml /etc/graphite-api.yml
-sudo ln -s /home/pi/rasberry/graphite_api /var/www/graphite_api
-sudo a2enwsgi
-sudo a2enmod headers
+# sudo unlink /etc/apache2/sites-enabled/000-default.conf
+# sudo ln -s /home/pi/raspberry/graphite.conf /etc/apache2/sites-enabled/graphite.conf
+# sudo ln -s /home/pi/raspberry/graphite-api.yml /etc/graphite-api.yml
+# sudo ln -s /home/pi/rasberry/graphite_api /var/www/graphite_api
+# sudo a2enwsgi
+# sudo a2enmod headers
 
-service apache2 restart
+# service apache2 restart
