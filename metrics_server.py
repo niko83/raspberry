@@ -3,15 +3,17 @@ import falcon
 import time
 import paho.mqtt.client as paho
 import logging
+import settings
+import metrics_file
+from locker import one_thread_restriction
 
 logger = logging.getLogger("smarthome")
 
-last_values = {}
 
 MQTT_CLIENT_NAME = 'raspberry_consumer_client'
 MQTT_HOST = '127.0.0.1'
 
-client = paho.Client(MQTT_CLIENT_NAME)
+client = paho.Client(MQTT_CLIENT_NAME + "_metrics_worker")
 
 while True:
     try:
@@ -22,11 +24,11 @@ while True:
         time.sleep(5)
 
 
-def processing():
-    humitidy_processing()
+def processing(last_values):
+    humitidy_processing(last_values)
 
 
-def humitidy_processing():
+def humitidy_processing(last_values):
     gisteresis = 2
     humidity_limit = 50
     key = '370c3800'
@@ -63,27 +65,34 @@ def _metric(metric_name, val, _time, **labels):
     return "%s%s %s %s000" % (metric_name, labels_str, val, int(_time))
 
 
+@one_thread_restriction(settings.LOCK_KEY)
+def _process():
+    last_values = metrics_file.read()
+
+    processing(last_values)
+    data = []
+    for key, (value, _time) in last_values.items():
+
+        try:
+            namespace, wifipoint, name = key.split('/', 2)
+        except ValueError:
+            print("error: %s" % key)
+            continue
+        data.append(_metric('val', value, _time, **{
+            'namespace': namespace,
+            'wifipoint': wifipoint,
+            'name': name,
+        }))
+
+
+    metrics_file.remove()
+    return data
+
+
 class ThingsResource(object):
+
     def on_get(self, req, resp):
-
-        processing()
-        data = []
-        for key, (value, _time) in last_values.items():
-
-            try:
-                namespace, wifipoint, name = key.split('/', 2)
-            except ValueError:
-                print("error: %s" % key)
-                last_values.pop(key)
-                continue
-            data.append(_metric('val', value, _time, **{
-                'namespace': namespace,
-                'wifipoint': wifipoint,
-                'name': name,
-            }))
-            last_values.pop(key)
-
-        resp.body = "\n".join(data)
+        resp.body = "\n".join(_process())
 
 
 app = falcon.API()
