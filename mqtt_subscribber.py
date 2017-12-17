@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import time
+from wsgiref import simple_server
+import falcon
 import sys
 import os
 import paho.mqtt.client as paho
@@ -25,7 +27,7 @@ print("----------------------")
 
 last_values = {}
 
-measure_min_delta = timedelta(seconds=300)
+measure_min_delta = timedelta(seconds=10)
 
 NORMALIZATORS = {
     'dht_t': lambda x: round(x/2, 1)*2,
@@ -134,5 +136,18 @@ signal.signal(signal.SIGINT, signal_handler)
 t = threading.Thread(target=processing)
 t.setDaemon(True)
 t.start()
-print("1")
 time.sleep(999999999)
+
+# class ThingsResource(object):
+#     def on_get(self, req, resp):
+#         """Handles GET requests"""
+#         resp.status = falcon.HTTP_200  # This is the default status
+#         resp.body = ('\nTwo things awe me most, the starry sky '
+#                      'above me and the moral law within me.\n'
+#                      '\n'
+#                      '    ~ Immanuel Kant\n\n')
+# 
+# app = falcon.API()
+# app.add_route('/metrics', ThingsResource())
+# httpd = simple_server.make_server('127.0.0.1', 8000, app)
+# httpd.serve_forever()
