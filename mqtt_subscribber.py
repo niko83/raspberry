@@ -7,6 +7,8 @@ import sys
 import paho.mqtt.client as paho
 import threading
 from pprint import pprint
+import logging
+logger = logging.getLogger()
 
 
 _lock = threading.Lock()
@@ -14,10 +16,6 @@ _lock = threading.Lock()
 MQTT_CLIENT_NAME = 'smarthome_client'
 MQTT_HOST = '127.0.0.1'
 MQTT_SUBSRIBER_TOPIC = "home/#"
-
-print("----------------------")
-print("Start script")
-print("----------------------")
 
 last_values = {}
 
@@ -35,7 +33,18 @@ def DEFAULT_NORMALIZATOR(x):
 
 def processing():
     client = paho.Client(MQTT_CLIENT_NAME + "metrics_processing")
-    client.connect(MQTT_HOST)
+
+    cnt = 10
+    while cnt > 0:
+        try:
+            client.connect(MQTT_HOST)
+            break
+        except Exception:
+            logger.error("Cann not connetct to mqtt. %s", MQTT_HOST)
+            cnt -= 1
+            if cnt <= 0:
+                raise
+
     humitidy_processing(client)
 
 
@@ -43,8 +52,8 @@ def humitidy_processing(client):
     gisteresis = 2
     humidity_limit = 50
     key = '370c3800'
-    last_humidity = last_values.get("home.%s.dht_h" % key)
-    last_temperature = last_values.get("home.%s.dht_t" % key)
+    last_humidity = last_values.get("home/%s/dht_h" % key)
+    last_temperature = last_values.get("home/%s/dht_t" % key)
     if (
         last_temperature is None or
         last_humidity is None or
@@ -87,7 +96,6 @@ def on_message(client, userdata, message):
     _lock.acquire()
     try:
         last_values[message.topic] = (normalizator(value), time.time())
-        pprint(last_values)
     finally:
         _lock.release()
 
@@ -118,16 +126,15 @@ class ThingsResource(object):
                     print("error: %s" % key)
                     last_values.pop(key)
                     continue
-                data.append(_metric('val', value, _time, **{
-                    'namespace': namespace,
-                    'wifipoint': wifipoint,
+                data.append(_metric('v', value, _time, **{
+                    'point': wifipoint,
                     'name': name,
                 }))
                 last_values.pop(key)
         finally:
             _lock.release()
 
-        resp.body = "\n".join(data)
+        resp.body = "\n".join(data) + "\n"
 
 
 
@@ -141,7 +148,16 @@ def process_metric():
 def process_mqtt_events():
     client = paho.Client(MQTT_CLIENT_NAME + "_subscribber")
     client.on_message = on_message
-    client.connect(MQTT_HOST)
+    cnt = 10
+    while cnt > 0:
+        try:
+            client.connect(MQTT_HOST)
+            break
+        except Exception:
+            logger.error("Cann not connetct to mqtt. %s", MQTT_HOST)
+            cnt -= 1
+            if cnt <= 0:
+                raise
     client.subscribe(MQTT_SUBSRIBER_TOPIC)
     client.loop_start()
 
