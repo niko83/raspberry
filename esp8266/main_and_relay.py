@@ -47,9 +47,9 @@ def on_message(topic, msg):
     msg = msg.decode('utf-8')
     topic = topic.split('/')[-1]
     if topic == "humidifier":
-        pin = machine.Pin(12, Pin.OUT)
+        pin = machine.Pin(12, Pin.OUT)  # D6
     elif topic == "lamp":
-        pin = machine.Pin(13, Pin.OUT)
+        pin = machine.Pin(13, Pin.OUT)  # D7
     else:
         print('Unknown topic "%s"' % topic)
         return
@@ -69,7 +69,8 @@ def on_message(topic, msg):
     else:
         print("Unknown command %s" % msg)
 
-
+plant_pin_vc = machine.Pin(4, Pin.OUT)  # D2
+plant_pin_vc.off()
 on_message(b'humidifier', b'on')
 on_message(b'lamp', b'on')
 time.sleep(5)
@@ -85,12 +86,10 @@ def push_meassure():
 
     client.publish('home/%s/dht_t' % _client_id, mqtt_val(dht_pin.temperature()))
     client.publish('home/%s/dht_h' % _client_id, mqtt_val(dht_pin.humidity()))
-    client.publish('home/%s/light' % _client_id, mqtt_val(machine.ADC(0).read()))
 
-    #  if machine.Pin(4, machine.Pin.IN).value():  # D2
-        #  client.publish('home/%s/state_window' % _client_id, mqtt_val(0))  # opened window
-    #  else:
-        #  client.publish('home/%s/state_window' % _client_id, mqtt_val(15))  # closed
+    plant_pin_vc.on()
+    client.publish('home/%s/plant' % _client_id, mqtt_val(machine.ADC(0).read()))
+    plant_pin_vc.off()
 
 try:
     while True:
