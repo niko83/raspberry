@@ -4,7 +4,6 @@ import network
 import dht
 import machine
 import ubinascii
-from machine import Pin
 from umqtt.simple import MQTTClient
 
 
@@ -89,6 +88,7 @@ try:
         time.sleep(10)
 finally:
     client.disconnect()
+    machine.reset()
 
 #  time.sleep(0.5)
 #  rtc = machine.RTC()
