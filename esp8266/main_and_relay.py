@@ -80,7 +80,9 @@ client.set_callback(on_message)
 client.subscribe("home/relay/#")
 
 
+_last_plant_meassure = 0
 def push_meassure():
+    global _last_plant_meassure
     dht_pin = dht.DHT22(machine.Pin(14))  # D5
     dht_pin.measure()
 
@@ -88,8 +90,14 @@ def push_meassure():
     client.publish('home/%s/dht_h' % _client_id, mqtt_val(dht_pin.humidity()))
 
     plant_pin_vc.on()
-    client.publish('home/%s/plant' % _client_id, mqtt_val(machine.ADC(0).read()))
+    client.publish('home/%s/plant2' % _client_id, mqtt_val(machine.ADC(0).read()))
     plant_pin_vc.off()
+    if time.time() - _last_plant_meassure > 300:
+        plant_pin_vc.on()
+        time.sleep(5)
+        client.publish('home/%s/plant' % _client_id, mqtt_val(machine.ADC(0).read()))
+        _last_plant_meassure = time.time()
+        plant_pin_vc.off()
 
 try:
     while True:
@@ -102,3 +110,4 @@ try:
         time.sleep(10)
 finally:
     client.disconnect()
+    machine.reset()
