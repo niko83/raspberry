@@ -80,7 +80,7 @@ client.set_callback(on_message)
 client.subscribe("home/relay/#")
 
 
-_last_plant_meassure = 0
+_last_plant_meassure = -99999
 def push_meassure():
     global _last_plant_meassure
     dht_pin = dht.DHT22(machine.Pin(14))  # D5
