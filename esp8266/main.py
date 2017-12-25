@@ -12,6 +12,20 @@ def mqtt_val(val):
     return bytes(str(val), 'utf-8')
 
 
+class PIN:
+    D5 = 14
+    D6 = 12
+    D7 = 13
+    D8 = 15
+    map_to_d = {
+        14: 'D5',
+        12: 'D6',
+        13: 'D7',
+        15: 'D8',
+
+    }
+
+
 network.WLAN(network.AP_IF).active(False)
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
@@ -43,11 +57,23 @@ print("Successfully Connected to MQTT")
 
 
 def push_meassure():
-    dht_pin = dht.DHT22(machine.Pin(14))  # D5
-    dht_pin.measure()
+    for pin in [
+        PIN.D5,
+        PIN.D6,
+        #  PIN.D7,
+        #  PIN.D8,
+    ]:
+        dht_pin = dht.DHT22(machine.Pin(pin))
+        dht_pin.measure()
+        client.publish(
+            'home/%s/dht_t_%s' % (_client_id, PIN.map_to_d[pin]),
+            mqtt_val(dht_pin.temperature())
+        )
+        client.publish(
+            'home/%s/dht_h_%s' % (_client_id, PIN.map_to_d[pin]),
+            mqtt_val(dht_pin.humidity())
+        )
 
-    client.publish('home/%s/dht_t' % _client_id, mqtt_val(dht_pin.temperature()))
-    client.publish('home/%s/dht_h' % _client_id, mqtt_val(dht_pin.humidity()))
     #  client.publish('home/%s/plant' % _client_id, mqtt_val(machine.ADC(0).read()))
 
     #  if machine.Pin(4, machine.Pin.IN).value():  # D2
