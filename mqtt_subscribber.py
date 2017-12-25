@@ -20,10 +20,8 @@ MQTT_SUBSRIBER_TOPIC = "home/#"
 last_values = {}
 
 NORMALIZATORS = {
-    'dht_t': lambda x: round(x/2, 1)*2,
-    'dht_h': round,
-    'light': lambda x: round((1024.0 - x)/1024/0.02) * 2,
-    'plant': lambda x: round((1024.0 - x)/1024/0.01),
+    "plant": lambda x: (1024.0 - x)/1024*100, 
+    "plant2": lambda x: (1024.0 - x)/1024*100, 
 }
 
 
