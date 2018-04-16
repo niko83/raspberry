@@ -40,7 +40,7 @@ while True:
     if wlan.isconnected():
         break
     c += 1
-    print("wlan connect: %s" % c)
+    print("wlan connect attemp:%s" % c)
     time.sleep(1)
     if c > 30:
         machine.reset()
