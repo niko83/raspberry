@@ -16,7 +16,7 @@ print("Start script")
 print("----------------------")
 
 
-def push_heartbit():
+def push_heartbit(client):
     client.publish("home/heartbit", "1")
 
 
