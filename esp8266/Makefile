@@ -1,9 +1,13 @@
 deploy: 
-	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main.py /main.py ;
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main.py /main.py;
 deploy_relay: 
-	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_relay.py /main.py ;
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_relay.py /main.py;
 deploy_and_relay: 
-	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_and_relay.py /main.py ;
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put main_and_relay.py /main.py;
+deploy_utils: 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 rmdir /utils; sudo ampy --port /dev/ttyUSB0 put utils /utils;
+deploy_config: 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put config.json /config.json;
 ls:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
 run:
