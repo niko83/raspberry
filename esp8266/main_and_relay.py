@@ -3,10 +3,13 @@ import time
 import dht
 import machine
 from machine import Pin
-from utils import wlan, client_id, client, PIN, mqtt_val
+from utils import client_id, client, PIN, mqtt_val, check_heartbit
 
 
 def on_message(topic, msg):
+    if check_heartbit (topic) == 'ERROR':
+        machine.reset()
+
     topic = topic.decode('utf-8')
     msg = msg.decode('utf-8')
     topic = topic.split('/')[-1]
@@ -35,20 +38,18 @@ def on_message(topic, msg):
 
 plant_pin_vc = machine.Pin(PIN.D2, Pin.OUT)
 plant_pin_vc.off()
-on_message(b'humidifier', b'on')
-on_message(b'lamp', b'on')
-time.sleep(5)
-on_message(b'humidifier', b'off')
-on_message(b'lamp', b'off')
+#  on_message(b'humidifier', b'on')
+#  on_message(b'lamp', b'on')
+#  time.sleep(5)
+#  on_message(b'humidifier', b'off')
+#  on_message(b'lamp', b'off')
 client.set_callback(on_message)
-client.subscribe("home/relay/#")
+client.subscribe("home/#")
 
 
-_last_plant_meassure = -99999
 
 
 def push_meassure():
-    global _last_plant_meassure
     dht_pin = dht.DHT22(machine.Pin(PIN.D5))
     dht_pin.measure()
 
@@ -58,19 +59,10 @@ def push_meassure():
     plant_pin_vc.on()
     client.publish('home/%s/plant2' % client_id, mqtt_val(machine.ADC(0).read()))
     plant_pin_vc.off()
-    if time.time() - _last_plant_meassure > 300:
-        plant_pin_vc.on()
-        time.sleep(5)
-        client.publish('home/%s/plant' % client_id, mqtt_val(machine.ADC(0).read()))
-        _last_plant_meassure = time.time()
-        plant_pin_vc.off()
 
 try:
     while True:
-        if not wlan.isconnected():
-            machine.reset()
         push_meassure()
-        print("wait_msg")
         for i in range(100):
             client.check_msg()
         time.sleep(10)

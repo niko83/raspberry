@@ -59,3 +59,16 @@ while True:
         if c > 30:
             machine.reset()
 print("Successfully Connected to MQTT")
+
+_last_heartbit = time.time()
+
+
+def check_heartbit(topic):
+    global _last_heartbit
+    topic = topic.decode('utf-8')
+    topic = topic.split('/')[-1]
+    if topic == "heartbit":
+        _last_heartbit = time.time()
+
+    if time.time() - _last_heartbit > 60:
+        return 'ERROR'

@@ -2,13 +2,16 @@ import time
 
 import dht
 import machine
-from utils import wlan, client_id, client, PIN, mqtt_val
+from utils import wlan, client_id, client, PIN, mqtt_val, check_heartbit
 
+
+plant_pin_vc = machine.Pin(PIN.D2, machine.Pin.OUT)
+plant_pin_vc.off()
 
 def push_meassure():
     for pin in [
         PIN.D5,
-        PIN.D6,
+        #  PIN.D6,
         #  PIN.D7,
         #  PIN.D8,
     ]:
@@ -23,18 +26,24 @@ def push_meassure():
             mqtt_val(dht_pin.humidity())
         )
 
-    #  client.publish('home/%s/plant' % client_id, mqtt_val(machine.ADC(0).read()))
+    plant_pin_vc.on()
+    client.publish('home/%s/plant' % client_id, mqtt_val(machine.ADC(0).read()))
+    plant_pin_vc.off()
 
-    #  if machine.Pin(4, machine.Pin.IN).value():  # D2
-        #  client.publish('home/%s/state_window' % client_id, mqtt_val(0))  # opened window
-    #  else:
-        #  client.publish('home/%s/state_window' % client_id, mqtt_val(15))  # closed
+
+def on_message(topic, msg):
+    if check_heartbit(topic) == 'ERROR':
+        machine.reset()
+
+
+client.set_callback(on_message)
+client.subscribe("home/#")
 
 try:
     while True:
-        if not wlan.isconnected():
-            machine.reset()
         push_meassure()
+        for i in range(100):
+            client.check_msg()
         time.sleep(10)
 finally:
     client.disconnect()
