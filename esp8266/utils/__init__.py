@@ -70,5 +70,5 @@ def check_heartbit(topic):
     if topic == "heartbit":
         _last_heartbit = time.time()
 
-    if time.time() - _last_heartbit > 60:
+    if time.time() - _last_heartbit > 300:
         return 'ERROR'
