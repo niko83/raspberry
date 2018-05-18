@@ -67,5 +67,4 @@ try:
             client.check_msg()
         time.sleep(10)
 finally:
-    client.disconnect()
     machine.reset()
