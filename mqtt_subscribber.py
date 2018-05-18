@@ -20,8 +20,8 @@ MQTT_SUBSRIBER_TOPIC = "home/#"
 last_values = {}
 
 NORMALIZATORS = {
-    "plant": lambda x: (1024.0 - x)/1024*100, 
-    "plant2": lambda x: (1024.0 - x)/1024*100, 
+    "plant": lambda x: (1024.0 - x)/1024*100,
+    "plant2": lambda x: (1024.0 - x)/1024*100,
 }
 
 
