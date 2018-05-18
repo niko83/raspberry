@@ -1,6 +1,7 @@
 version: '2'
 volumes:
   prometheus_data:
+  grafana_data:
 services:
   prometheus:
       container_name: system_metrics_prom
@@ -13,7 +14,7 @@ services:
       container_name: system_metrics_grafana
       image: grafana/grafana
       volumes:
-          - /var/lib/grafana:/var/lib/grafana 
+          - grafana_data:/var/lib/grafana 
       network_mode: host
   mqtt:
       container_name: mqtt
