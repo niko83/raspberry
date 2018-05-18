@@ -15,3 +15,13 @@ services:
       volumes:
           - /var/lib/grafana:/var/lib/grafana 
       network_mode: host
+  mqtt:
+      container_name: mqtt
+      image: eclipse-mosquitto
+      volumes:
+          # - mosquitto.conf:/mosquitto/config/mosquitto.conf 
+          # - /mosquitto/data 
+          # - /mosquitto/log 
+      ports:
+         - 1883:1883
+         - 9001:9001
