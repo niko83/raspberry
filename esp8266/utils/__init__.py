@@ -8,12 +8,26 @@ from umqtt.simple import MQTTClient
 
 MQTT_IP = "192.168.100.12"
 
+
 def mqtt_val(val):
     return bytes(str(val), 'utf-8')
 
+rtc = machine.RTC()
+rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
+
+
+interval = 30000
+
+
+def deepsleep():
+    time.sleep_ms(300)
+    rtc.alarm(rtc.ALARM0, deepsleep_interval)
+    print("machine is going to deeplseep")
+    machine.deepsleep()
+
 
 class PIN:
-    D0 = 16 # build-in led
+    D0 = 16  # build-in led
     D1 = 5
     D2 = 4
     D3 = 0
@@ -38,6 +52,8 @@ class PIN:
         1: 'D10',
     }
 
+for p in PIN.map_to_d.keys():
+    machine.Pin(PIN.D8, machine.Pin.OUT).off()
 
 network.WLAN(network.AP_IF).active(False)
 wlan = network.WLAN(network.STA_IF)

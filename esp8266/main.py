@@ -3,23 +3,17 @@ import time
 import dht
 import machine
 import onewire
-from utils import client_id, client, PIN, mqtt_val, check_heartbit
+from utils import client_id, client, PIN, mqtt_val, check_heartbit, deepsleep
 import ds18x20
 
 
 relay_1_pin = machine.Pin(PIN.D8, machine.Pin.OUT)
-relay_1_pin.off()
-
-relay_2_pin = machine.Pin(PIN.D7, machine.Pin.OUT)
-relay_2_pin.off()
-
+#  relay_2_pin = machine.Pin(PIN.D7, machine.Pin.OUT)
 plant_pin_vc = machine.Pin(PIN.D2, machine.Pin.OUT)
-plant_pin_vc.off()
 
-rtc = machine.RTC()
-rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
 
-deepsleep_interval = 30000
+reset = deepsleep
+#  reset = machine.reset
 
 
 def push_meassure():
@@ -65,33 +59,26 @@ def push_meassure():
         for rom in roms:
             client.publish(
                 'home/%s/temperature_%s' % (client_id, PIN.map_to_d[pin]),
-                 mqtt_val(ds.read_temp(rom))
+                mqtt_val(ds.read_temp(rom))
             )
 
 
 def on_message(topic, msg):
     if check_heartbit(topic) == 'ERROR':
-        #  machine.reset()
-        rtc.alarm(rtc.ALARM0, deepsleep_interval)
-        print("machine is going to deeplseep")
-        machine.deepsleep()
+        reset()
 
 client.set_callback(on_message)
 client.subscribe("home/#")
 
 try:
-    #  while True:
-    push_meassure()
-        #  for i in range(100):
-            #  client.check_msg()
-        #  time.sleep(10)
-
-    time.sleep_ms(300)
-    rtc.alarm(rtc.ALARM0, deepsleep_interval)
-    print("machine is going to deeplseep")
-    machine.deepsleep()
+    if reset is deepsleep:
+        push_meassure()
+        reset()
+    else:
+        while True:
+            push_meassure()
+            for i in range(100):
+                client.check_msg()
+            time.sleep_ts(30000)
 finally:
-    #  machine.reset()
-    rtc.alarm(rtc.ALARM0, deepsleep_interval)
-    print("machine is going to deeplseep")
-    machine.deepsleep()
+    reset()
