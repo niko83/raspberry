@@ -12,8 +12,8 @@ relay_1_pin = machine.Pin(PIN.D8, machine.Pin.OUT)
 plant_pin_vc = machine.Pin(PIN.D2, machine.Pin.OUT)
 
 
-reset = deepsleep
-#  reset = machine.reset
+#  reset = deepsleep
+reset = machine.reset
 
 
 def push_meassure():
@@ -41,7 +41,7 @@ def push_meassure():
     if (1024.0 - wet) / 1024 * 100 < 50:
         relay_1_pin.on()
         client.publish('home/%s/pump' % client_id, mqtt_val(10))
-        time.sleep(30)
+        time.sleep(5)
         relay_1_pin.off()
     else:
         relay_1_pin.off()
@@ -49,7 +49,7 @@ def push_meassure():
 
     # Measure onewire
     for pin in [
-        PIN.D6,
+        #  PIN.D6,
     ]:
         ds = ds18x20.DS18X20(onewire.OneWire(machine.Pin(pin)))
         roms = ds.scan()
@@ -76,9 +76,10 @@ try:
         reset()
     else:
         while True:
+            #  print(".")
             push_meassure()
             for i in range(100):
                 client.check_msg()
-            time.sleep_ts(30000)
+            time.sleep_ms(30000)
 finally:
     reset()
