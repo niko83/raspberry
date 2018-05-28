@@ -1,4 +1,4 @@
-#. Download  Raspbian and write Image
+# Download  Raspbian and write Image
 ```
 wget https://downloads.raspberrypi.org/raspbian_lite_latest -O /tmp/raspbian_lite.zip
 unzip -p /tmp/raspbian_lite.zip | sudo dd of=/dev/sdb bs=4M status=progress conv=fsync
@@ -11,19 +11,19 @@ truncate --reference 2017-11-29-raspbian-stretch-lite.img from-sd-card.img
 diff -s /tmp/from-sd-card.img 2017-11-29-raspbian-stretch-lite.img
 ```          
 
-#. Plug Display and keyboard for enable SSHD 
+# Plug Display and keyboard for enable SSHD 
 ```
 loging: pi
 password: raspberry
 ```
 sudo raspi-config
 
-#. Copy  public ssh key to raspberry
+# Copy  public ssh key to raspberry
 ```
 ssh-copy-id -i ~/.ssh/id_rsa.pub pi@192.168.100.12
 ```
 
-#. Setup software:
+# Setup software:
 ```
 passwd
 sudo apt-get update
@@ -53,6 +53,8 @@ sudo pip install  supervisor
 
 ```
 
-# sudo pip install docker-compose
 
-# sudo apt-get install python python-pip build-essential python-dev libcairo2-dev libffi-dev
+```
+sudo pip install docker-compose
+sudo apt-get install python python-pip build-essential python-dev libcairo2-dev libffi-dev
+```
