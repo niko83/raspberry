@@ -6,7 +6,6 @@ from utils.settings import Settings
 import ubinascii
 from umqtt.simple import MQTTClient
 
-MQTT_IP = "192.168.100.12"
 
 
 def mqtt_val(val):
@@ -51,6 +50,8 @@ class PIN:
         3: 'D9',
         1: 'D10',
     }
+    str_to_pin = dict((v, k) for k, v in map_to_d.items())
+
 
 for p in PIN.map_to_d.keys():
     machine.Pin(PIN.D8, machine.Pin.OUT).off()
@@ -80,7 +81,7 @@ print(wlan.ifconfig())
 c = 0
 while True:
     try:
-        client = MQTTClient(client_id, MQTT_IP)
+        client = MQTTClient(client_id, Settings.MQTT_IP)
         client.connect()
         break
     except:

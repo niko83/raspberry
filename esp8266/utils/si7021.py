@@ -17,11 +17,11 @@ CMD_WRITE_HEATER_CONTROL_REGISTER = 0x51
 CMD_READ_HEATER_CONTROL_REGISTER = 0x11
 
 class Si7021(object):
-    def __init__(self, i2c_addr = SI7021_I2C_DEFAULT_ADDR):
+    def __init__(self, scl, sda, i2c_addr = SI7021_I2C_DEFAULT_ADDR):
         self.addr = i2c_addr
         self.cbuffer = bytearray(2)
         self.cbuffer[1] = 0x00
-        self.i2c = I2C(scl=Pin(5), sda=Pin(4), freq=100000)
+        self.i2c = I2C(scl=Pin(scl), sda=Pin(sda), freq=100000)
 
     def write_command(self, command_byte):
         self.cbuffer[0] = command_byte
@@ -41,4 +41,4 @@ class Si7021(object):
         rh = self.i2c.readfrom(self.addr, 3)
         rh2 = rh[0] << 8
         rh2 = rh2 | rh[1]
-return (125 * rh2 / 65536) - 6
+        return (125 * rh2 / 65536) - 6
