@@ -15,6 +15,18 @@ else:
     reset = machine.reset
 
 
+def err_handler(func):
+    def wrapper(*args, **kwargs):
+        try:
+            result = func(*args, **kwargs)
+        except Exception as e:
+            print("FAIL[%s,%s] %s" % (args, kwargs, e))
+        else:
+            print("OK[%s,%s] = %s" % (args, kwargs, result))
+    return wrapper
+
+
+@err_handler
 def processing_dht(pin):
     dht_pin = dht.DHT22(machine.Pin(PIN.str_to_pin[pin]))
     dht_pin.measure()
@@ -28,6 +40,7 @@ def processing_dht(pin):
     )
 
 
+@err_handler
 def processing_d18(pin):
     # Measure onewire
     # ds = ds18x20.DS18X20(onewire.OneWire(machine.Pin(PIN.D5)));
@@ -38,13 +51,16 @@ def processing_d18(pin):
 
     ds.convert_temp()
     time.sleep_ms(750)
-    for rom in roms:
-        client.publish(
-            'home/%s/temperature_%s' % (client_id, pin),
-            mqtt_val(ds.read_temp(rom))
-        )
+    v = ds.read_temp(roms[0])
+    client.publish(
+        'home/%s/temperature_%s' % (client_id, pin),
+        mqtt_val(v)
+    )
+    return v
 
 
+
+@err_handler
 def processing_plant(relay_pin, power_pin, limit_wet):
 
     if relay_pin:
@@ -69,10 +85,16 @@ def processing_plant(relay_pin, power_pin, limit_wet):
             client.publish('home/%s/pump' % client_id, mqtt_val(0))
 
 
+@err_handler
 def processing_si7021(scl, sda):
+    scl = PIN.str_to_pin[scl]
+    sda = PIN.str_to_pin[sda]
+
     si = Si7021(scl, sda)
-    client.publish('home/%s/sht_h' % client_id, mqtt_val(si.readRH()))
-    client.publish('home/%s/sht_t' % client_id, mqtt_val(si.readTemp()))
+    h, t = si.readRH(), si.readTemp()
+    client.publish('home/%s/sht_h' % client_id, mqtt_val(h))
+    client.publish('home/%s/sht_t' % client_id, mqtt_val(t))
+    return h, t
 
 
 def push_meassure():
@@ -85,7 +107,10 @@ def push_meassure():
         processing_plant(**Settings.PLANT)
 
     for pin in Settings.DS18pins:
-        processing_d18(pin)
+        try:
+            processing_d18(pin)
+        except Exception as e:
+            print("FAil %s %s" %( pin, e))
 
     for scl, sda in Settings.SI7021:
         processing_si7021(scl, sda)
@@ -108,6 +133,6 @@ try:
             push_meassure()
             for i in range(100):
                 client.check_msg()
-            time.sleep_ms(30000)
+            time.sleep_ms(Settings.INTERVAL)
 finally:
     reset()

@@ -15,9 +15,6 @@ rtc = machine.RTC()
 rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
 
 
-interval = 30000
-
-
 def deepsleep():
     time.sleep_ms(300)
     rtc.alarm(rtc.ALARM0, deepsleep_interval)

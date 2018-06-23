@@ -10,6 +10,7 @@ class Settings():
     SI7021 = []
     PLANT = None   # EXAMPLE {"relay_pin": 'd8', 'power_pin': 'd2', 'limit_wet': 65}
     ENABLED_DEEPSLEEP = False
+    INTERVAL = 30000
 
 
 with open('/config.json') as f:
