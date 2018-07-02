@@ -7,7 +7,6 @@ import ubinascii
 from umqtt.simple import MQTTClient
 
 
-
 def mqtt_val(val):
     return bytes(str(val), 'utf-8')
 
@@ -53,31 +52,39 @@ class PIN:
 for p in PIN.map_to_d.keys():
     machine.Pin(PIN.D8, machine.Pin.OUT).off()
 
-network.WLAN(network.AP_IF).active(False)
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect(Settings.WIFI_SSID, Settings.WIFI_PASS)
-
-
 client_id = ubinascii.hexlify(machine.unique_id()).decode("utf-8")
 print("Client_id: %s" % client_id)
 
+network.WLAN(network.AP_IF).active(False)
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
 
-c = 0
-while True:
-    if wlan.isconnected():
-        break
-    c += 1
-    print("wlan connect attemp:%s" % c)
-    time.sleep(1)
-    if c > 30:
-        machine.reset()
-print(wlan.ifconfig())
 
+all_wifi = tuple(w[0].decode("utf8") for w in wlan.scan())
+for wifi_name, wifi_pass in Settings.WIFI:
+    if wifi_name not in all_wifi:
+        print("WLAN skipped %s" % wifi_name)
+        continue
+    print("WLAN connect %s:%s" % (wifi_name, wifi_pass))
+    wlan.connect(wifi_name, wifi_pass)
+    c = 0
+    while c < 10:
+        if wlan.isconnected():
+            break
+        c += 1
+        time.sleep(1)
+        print("WLAN attemp: %s" % c)
+
+
+if wlan.isconnected():
+    print("WLAN config: %s" % repr(wlan.ifconfig()))
+else:
+    machine.reset()
 
 c = 0
 while True:
     try:
+        print("MQTT: try connect %s, attemp %s" % (Settings.MQTT_IP, c))
         client = MQTTClient(client_id, Settings.MQTT_IP)
         client.connect()
         break
@@ -86,7 +93,7 @@ while True:
         c += 1
         if c > 30:
             machine.reset()
-print("Successfully Connected to MQTT")
+print("MQTT: Successfully connected")
 
 _last_heartbit = time.time()
 

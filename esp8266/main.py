@@ -1,3 +1,6 @@
+import gc
+print("Free mem: %s" % gc.mem_free())
+
 import time
 
 import dht
@@ -21,6 +24,13 @@ def err_handler(func):
             result = func(*args, **kwargs)
         except Exception as e:
             print("FAIL[%s,%s] %s" % (args, kwargs, e))
+            try:
+                client.publish(
+                    'home/%s/error_%s' % (client_id, "_".join(args)),
+                    mqtt_val(1)
+                )
+            except Exception as e:
+                print("While sending error to mqtt error accured: %s " % e)
         else:
             print("OK[%s,%s] = %s" % (args, kwargs, result))
     return wrapper
@@ -124,11 +134,13 @@ client.set_callback(on_message)
 client.subscribe("home/#")
 
 try:
+    print("Free mem after init: %s" % gc.mem_free())
     if reset is deepsleep:
         push_meassure()
         reset()
     else:
         while True:
+            print("Current free mem: %s" % gc.mem_free())
             print("Iteration is starting...")
             push_meassure()
             for i in range(100):
