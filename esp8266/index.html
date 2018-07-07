@@ -1,0 +1,64 @@
+<html>
+    <head>
+        <title>TankGame</title>
+        <meta charset="utf-8">
+        <style>
+            body,html {
+                margin:0; padding: 0; 
+                background: black; height: 100%; 
+            }
+            .button{
+                height: 100%;
+                width: 50%;
+                background: lightgray;
+                text-align: center;
+                float: left;
+                padding: 0;
+                margin: 0;
+                box-shadow: inset 0px 0px 20px rgba(0,0,0,0.9);
+                font-size: 30px;
+            }
+            .button div {margin-top: 30%}
+            .button_ready{
+                background: #444;
+                font-weight: bold;
+                color: white;
+            }
+            .button_on{
+                background: #494;
+            }
+            .button_off{
+                background: #944;
+            }
+        </style>
+        <script type="text/javascript" src="jquery.js"></script>
+        <script>
+            var move_event = 'mousemove';
+            var up_event = 'mouseup';
+            var down_event = 'mousedown';
+            if ("ontouchstart" in window) {
+                move_event = 'touchmove';
+                up_event = 'touchend';
+                down_event = 'touchstart';
+            }
+            function trigger(key, val){
+                $.get( "/"+ key +"/" + val + "/", function(){});
+            }
+            window.onload = function() {
+                $(".js_button").on(down_event, function(){
+                    trigger($(this).data("key"), 1)
+                    $(this).addClass("button_on")     
+                })
+                $(".js_button").on(up_event, function(){
+                    trigger($(this).data("key"), 0)
+                    $(this).removeClass("button_on")     
+                })
+                $(".js_button").addClass("button_ready")     
+            }
+        </script>
+    </head>
+    <body>
+        <div class="js_button button" data-key="D1"></div>
+        <div class="js_button button" data-key="D2"></div>
+    </body>
+</html>

@@ -6,6 +6,9 @@ deploy_utils:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 rmdir /utils; sudo ampy --port /dev/ttyUSB0 put utils /utils;
 deploy_config: 
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put config.json /config.json;
+deploy_static: 
+	sudo ampy --port /dev/ttyUSB0 put index.html /index.html;
+	#sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put jquery.js.gz /jquery.js.gz; 
 ls:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
 run:
