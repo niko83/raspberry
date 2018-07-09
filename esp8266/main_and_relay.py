@@ -58,17 +58,6 @@ s.listen(1)
 print('listening on', addr)
 
 
-def send_OK(cl, data=''):
-    try:
-        cl.send('\n'.join([
-            'HTTP/1.1 200 OK\n',
-        ]))
-        if data:
-            cl.send(data)
-    except OSError:
-        print("ERROR send OK result")
-
-
 def send_file(filename, cl, gzip=False):
     start = 0
     slc = 2
@@ -109,7 +98,6 @@ try:
                 time.sleep(0.4)
                 pins[v].on()
                 time.sleep(0.4)
-                send_OK(cl, "{}")
         elif cmd[0] == 'jquery.js HTTP':
             send_file('jquery.js.gz', cl, True)
         elif cmd[0] in pins.keys():
@@ -117,7 +105,6 @@ try:
                 pins[cmd[0]].off()
             else:
                 pins[cmd[0]].on()
-            send_OK(cl, "{}")
         else:
             send_file('index.html', cl)
 

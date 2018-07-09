@@ -42,7 +42,7 @@
                 down_event = 'touchstart';
             }
             function trigger(key, val){
-                $.get( "/"+ key +"/" + val + "/", function(){});
+                $.get( "/"+ key +"/" + val + "/");
             }
             window.onload = function() {
                 $(".js_button").on(down_event, function(){
