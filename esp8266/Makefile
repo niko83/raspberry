@@ -8,7 +8,7 @@ deploy_config:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put config.json /config.json;
 deploy_static: 
 	sudo ampy --port /dev/ttyUSB0 put index.html /index.html;
-	#sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put jquery.js.gz /jquery.js.gz; 
+	# sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put jquery.js.gz /jquery.js.gz; 
 ls:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
 run:
@@ -22,5 +22,6 @@ deploy_micropython:
 	# http://micropython.org/resources/firmware/esp8266-20170823-v1.9.2.bin
 	sudo pkill picocom; \
 	sudo esptool.py --port /dev/ttyUSB0 erase_flash; \
-	sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20171101-v1.9.3.bin;
+	sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20180511-v1.9.4.bin;
+	# sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20171101-v1.9.3.bin;
 	# sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1  0 esp8266-20170823-v1.9.2.bin;

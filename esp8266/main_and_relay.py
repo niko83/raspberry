@@ -43,19 +43,27 @@ pins = {
 for v in pins.values():
     v.on()
 
-wlan = network.WLAN(network.AP_IF)
-wlan.config(essid="", password="")
-wlan.ifconfig(('192.168.0.10', '255.255.255.0', '192.168.0.1', '8.8.8.8'))
-wlan.active(True)
-print(wlan.ifconfig())
-print("==========")
 
-addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
-s = socket.socket()
-s.bind(addr)
-s.listen(1)
+if True:
+    from utils import wlan
+else:
+    wlan = network.WLAN(network.AP_IF)
+    wlan.config(essid="", password="")
+    wlan.ifconfig(('192.168.0.10', '255.255.255.0', '192.168.0.1', '8.8.8.8'))
+    wlan.active(True)
+    print(wlan.ifconfig())
+    print("==========")
 
-print('listening on', addr)
+#  addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+#  s = socket.socket()
+#  try:
+    #  s.bind(addr)
+#  except OSError as e:
+    #  print(str(e))
+    #  machine.reset()
+#  s.listen(1)
+
+#  print('listening on', addr)
 
 
 def send_file(filename, cl, gzip=False):
@@ -78,37 +86,244 @@ def send_file(filename, cl, gzip=False):
             else:
                 break
 
-try:
+#  try:
+#  print(machine.disable_irq())
+machine.freq(160000000)
+
+
+
+
+#########################
+import os
+import socket
+import network
+import websocket_helper
+from time import sleep
+import socket
+from websocket import websocket
+
+
+class ClientClosedError(Exception):
+    pass
+
+
+class WebSocketConnection:
+    def __init__(self, addr, s, close_callback):
+        self.client_close = False
+        self._need_check = False
+
+        self.address = addr
+        self.socket = s
+        self.ws = websocket(s, True)
+        self.close_callback = close_callback
+
+        s.setblocking(False)
+        s.setsockopt(socket.SOL_SOCKET, 20, self.notify)
+
+    def notify(self, s):
+        self._need_check = True
+
+    def read(self):
+        if self._need_check:
+            self._check_socket_state()
+
+        msg_bytes = None
+        try:
+            msg_bytes = self.ws.readline()
+        except OSError:
+            self.client_close = True
+
+        if not msg_bytes and self.client_close:
+            raise ClientClosedError()
+
+        return msg_bytes
+
+    def write(self, msg):
+        try:
+            self.ws.write(msg)
+        except OSError:
+            self.client_close = True
+
+    def _check_socket_state(self):
+        self._need_check = False
+        sock_str = str(self.socket)
+        state_str = sock_str.split(" ")[1]
+        state = int(state_str.split("=")[1])
+
+        if state == 3:
+            self.client_close = True
+
+    def is_closed(self):
+        return self.socket is None
+
+    def close(self):
+        print("Closing connection.")
+        self.socket.setsockopt(socket.SOL_SOCKET, 20, None)
+        self.socket.close()
+        self.socket = None
+        self.ws = None
+        if self.close_callback:
+            self.close_callback(self)
+
+
+class WebSocketClient:
+    def __init__(self, conn):
+        self.connection = conn
+
+    def process(self):
+
+        data = self.connection.read()
+        if data:
+            print(data)
+
+
+class WebSocketServer:
+    def __init__(self, page, max_connections=1):
+        self._listen_s = None
+        self._clients = []
+        self._max_connections = max_connections
+        self._page = page
+
+    def _setup_conn(self, port, accept_handler):
+        self._listen_s = socket.socket()
+        self._listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+
+#  s = socket.socket()
+#  try:
+    #  s.bind(addr)
+
+        addr = socket.getaddrinfo('0.0.0.0', port)[0][-1]
+        #  ai = socket.getaddrinfo("0.0.0.0", port)
+        #  addr = ai[0][4]
+
+        self._listen_s.bind(addr)
+        self._listen_s.listen(1)
+        if accept_handler:
+            self._listen_s.setsockopt(socket.SOL_SOCKET, 20, accept_handler)
+        for i in (network.AP_IF, network.STA_IF):
+            iface = network.WLAN(i)
+            if iface.active():
+                print("WebSocket started on ws://%s:%d" % (iface.ifconfig()[0], port))
+
+    def _accept_conn(self, listen_sock):
+        cl, remote_addr = listen_sock.accept()
+        print("Client connection from:", remote_addr)
+
+        if len(self._clients) >= self._max_connections:
+            # Maximum connections limit reached
+            cl.setblocking(True)
+            cl.sendall("HTTP/1.1 503 Too many connections\n\n")
+            cl.sendall("\n")
+            #TODO: Make sure the data is sent before closing
+            sleep(0.1)
+            cl.close()
+            return
+
+        try:
+            websocket_helper.server_handshake(cl)
+        except OSError:
+            # Not a websocket connection, serve webpage
+            self._serve_page(cl)
+            return
+
+        self._clients.append(self._make_client(WebSocketConnection(remote_addr, cl, self.remove_connection)))
+
+    def _make_client(self, conn):
+        return WebSocketClient(conn)
+
+    def _serve_page(self, sock):
+        try:
+            sock.sendall('HTTP/1.1 200 OK\nConnection: close\nServer: WebSocket Server\nContent-Type: text/html\n')
+            length = os.stat(self._page)[6]
+            sock.sendall('Content-Length: {}\n\n'.format(length))
+            # Process page by lines to avoid large strings
+            with open(self._page, 'r') as f:
+                for line in f:
+                    sock.sendall(line)
+        except OSError:
+            # Error while serving webpage
+            pass
+        sock.close()
+
+    def stop(self):
+        if self._listen_s:
+            self._listen_s.close()
+        self._listen_s = None
+        for client in self._clients:
+            client.connection.close()
+        print("Stopped WebSocket server.")
+
+    def start(self, port=80):
+        if self._listen_s:
+            self.stop()
+        self._setup_conn(port, self._accept_conn)
+        print("Started WebSocket server.")
+
+    def process_all(self):
+        for client in self._clients:
+            client.process()
+
+    def remove_connection(self, conn):
+        for client in self._clients:
+            if client.connection is conn:
+                self._clients.remove(client)
+        return
+
+asd = WebSocketServer("/index.html")
+asd.start()
+while True:
+    asd.process_all()
+###########################
+
+
+
+
+
+
+
+
+
+gc.collect()
+while True:
+    print('client connected from', addr)
+    print("1 %s" % time.time())
+    cl, _ = s.accept()
+    print("2 %s" % time.time())
+    cl_file = cl.makefile('rwb', 0)
+    print("3 %s" % time.time())
+    cmd = ["", ""]
     while True:
-        cl, addr = s.accept()
-        print('client connected from', addr)
-        cl_file = cl.makefile('rwb', 0)
-        cmd = ["", ""]
-        while True:
-            line = cl_file.readline()
-            if line.startswith(b'GET '):
-                cmd = line.decode("utf8").split("/")[1:]
-            if not line or line == b'\r\n':
-                break
-        print(cmd)
+        line = cl_file.readline()
+        if line.startswith(b'GET '):
+            cmd = line.decode("utf8").split("/")[1:]
+        if not line or line == b'\r\n':
+            break
 
-        if cmd[0] == 'test':
-            for v in sorted(pins.keys()):
-                pins[v].off()
-                time.sleep(0.4)
-                pins[v].on()
-                time.sleep(0.4)
-        elif cmd[0] == 'jquery.js HTTP':
-            send_file('jquery.js.gz', cl, True)
-        elif cmd[0] in pins.keys():
-            if cmd[1] == '1':
+    print("4")
+
+    if cmd[0] in pins.keys():
+        if cmd[1] == '1':
+            if pins[cmd[0]].value() == 1:
                 pins[cmd[0]].off()
-            else:
-                pins[cmd[0]].on()
         else:
-            send_file('index.html', cl)
+            if pins[cmd[0]].value() == 0:
+                pins[cmd[0]].on()
 
-        cl.close()
-except Exception as e:
-    print("Unknown Error %s" % e)
-    machine.reset()
+        print("5")
+    elif cmd[0] == 'test':
+        for v in sorted(pins.keys()):
+            pins[v].off()
+            time.sleep(0.4)
+            pins[v].on()
+            time.sleep(0.4)
+    elif cmd[0] == 'jquery.js HTTP':
+        send_file('jquery.js.gz', cl, True)
+    elif cmd[0] == ' HTTP':
+        send_file('index.html', cl)
+    cl.close()
+    print("6")
+
+#  except Exception as e:
+    #  print("Unknown Error %s" % e)
+    #  machine.reset()

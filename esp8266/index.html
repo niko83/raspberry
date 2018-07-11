@@ -68,7 +68,7 @@ function open_socket(callback){
         $('.connecting').show().text('Connecting... ')
     }, 100)
 
-    socket = new WebSocket("ws://"+document.domain+"/ws/");
+    socket = new WebSocket("ws://"+document.domain+"");
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
         callback()
