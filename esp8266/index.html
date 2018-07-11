@@ -45,7 +45,7 @@
                 background: #944;
             }
         </style>
-        <script type="text/javascript" src="jquery.js"></script>
+        <!-- <script type="text/javascript" src="jquery.js"></script> -->
 <script>
 var move_event = 'mousemove';
 var up_event = 'mouseup';
@@ -63,17 +63,17 @@ function open_socket(callback){
         callback()
         return
     }
-    $('.connecting').empty()
-    var connecting_interval = setTimeout(function(){
-        $('.connecting').show().text('Connecting... ')
-    }, 100)
+    // $('.connecting').empty()
+    // var connecting_interval = setTimeout(function(){
+    //     $('.connecting').show().text('Connecting... ')
+    // }, 100)
 
     socket = new WebSocket("ws://"+document.domain+"");
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
         callback()
         clearInterval(connecting_interval)
-        $('.connecting').hide()
+    //    $('.connecting').hide()
     };
     socket.onmessage = function(event) {
         clearInterval(connecting_interval)
@@ -111,7 +111,7 @@ function open_socket(callback){
         }else{
             reason = "Unknown reason";
         }
-        $('.connecting').html('Connecting error, Code: <b>' + event.code + '</b>. Reason: <b>' + reason + '</b>').show()
+        // $('.connecting').html('Connecting error, Code: <b>' + event.code + '</b>. Reason: <b>' + reason + '</b>').show()
     }
     socket.onclose = function(event) {
         console.info("Closed")
@@ -121,17 +121,23 @@ function open_socket(callback){
 function trigger(key, val){
     open_socket(function(){socket.send(key + "/" + val)}) 
 }
-window.onload = function() {
-    $(".js_button").on(down_event, function(){
-        trigger($(this).data("key"), 1)
-        $(this).addClass("button_on")     
-    })
-    $(".js_button").on(up_event, function(){
-        trigger($(this).data("key"), 0)
-        $(this).removeClass("button_on")     
-    })
-    $(".js_button").addClass("button_ready")     
+function trigger_test(){
+    var key = 'D0'
+    var val = '1'
+    open_socket(function(){socket.send(key + "/" + val)}) 
 }
+setInterval(trigger_test, 100)
+// window.onload = function() {
+//     $(".js_button").on(down_event, function(){
+//         trigger($(this).data("key"), 1)
+//         $(this).addClass("button_on")     
+//     })
+//     $(".js_button").on(up_event, function(){
+//         trigger($(this).data("key"), 0)
+//         $(this).removeClass("button_on")     
+//     })
+//     $(".js_button").addClass("button_ready")     
+// }
 </script>
     </head>
     <body>
