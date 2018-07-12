@@ -117,16 +117,9 @@ function open_socket(callback){
         console.info("Closed")
     }
 }
-
 function trigger(key, val){
-    open_socket(function(){socket.send(key + "/" + val)}) 
-}
-function trigger_test(){
-    var key = 'D0'
-    var val = '1'
     open_socket(function(){socket.send(key + "/" + val + "/")}) 
 }
-// setInterval(trigger_test, 100)
 window.onload = function() {
     $(".js_button").on(down_event, function(){
         trigger($(this).data("key"), 1)

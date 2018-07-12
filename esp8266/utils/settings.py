@@ -3,6 +3,8 @@ import ujson as json
 
 class Settings():
     WIFI = []
+    WIFI_AP_ENABLED = False
+    WIFI_AP = ["", ""]
     MQTT_IP = ""
     DHTs = []
     DS18pins = []

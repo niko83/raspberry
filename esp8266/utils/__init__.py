@@ -55,45 +55,51 @@ for p in PIN.map_to_d.keys():
 client_id = ubinascii.hexlify(machine.unique_id()).decode("utf-8")
 print("Client_id: %s" % client_id)
 
-network.WLAN(network.AP_IF).active(False)
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-
-
-all_wifi = tuple(w[0].decode("utf8") for w in wlan.scan())
-for wifi_name, wifi_pass in Settings.WIFI:
-    if wifi_name not in all_wifi:
-        print("WLAN skipped %s" % wifi_name)
-        continue
-    print("WLAN connect %s:%s" % (wifi_name, wifi_pass))
-    wlan.connect(wifi_name, wifi_pass)
-    c = 0
-    while c < 10:
-        if wlan.isconnected():
-            break
-        c += 1
-        time.sleep(1)
-        print("WLAN attemp: %s" % c)
-
-
-if wlan.isconnected():
+if Settings.WIFI_AP_ENABLED:
+    print("WiFi as AP")
+    wlan = network.WLAN(network.AP_IF)
+    wlan.config(essid=Settings.WIFI_AP[0], password=Settings.WIFI_AP[1])
+    wlan.ifconfig(('192.168.0.10', '255.255.255.0', '192.168.0.1', '8.8.8.8'))
+    wlan.active(True)
     print("WLAN config: %s" % repr(wlan.ifconfig()))
 else:
-    machine.reset()
+    network.WLAN(network.AP_IF).active(False)
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
 
-c = 0
-while True:
-    try:
-        print("MQTT: try connect %s, attemp %s" % (Settings.MQTT_IP, c))
-        client = MQTTClient(client_id, Settings.MQTT_IP)
-        client.connect()
-        break
-    except:
-        time.sleep(1)
-        c += 1
-        if c > 30:
-            machine.reset()
-print("MQTT: Successfully connected")
+    all_wifi = tuple(w[0].decode("utf8") for w in wlan.scan())
+    for wifi_name, wifi_pass in Settings.WIFI:
+        if wifi_name not in all_wifi:
+            print("WLAN skipped %s" % wifi_name)
+            continue
+        print("WLAN connect %s:%s" % (wifi_name, wifi_pass))
+        wlan.connect(wifi_name, wifi_pass)
+        c = 0
+        while c < 10:
+            if wlan.isconnected():
+                break
+            c += 1
+            time.sleep(1)
+            print("WLAN attemp: %s" % c)
+
+    if wlan.isconnected():
+        print("WLAN config: %s" % repr(wlan.ifconfig()))
+    else:
+        machine.reset()
+
+    c = 0
+    while True:
+        try:
+            print("MQTT: try connect %s, attemp %s" % (Settings.MQTT_IP, c))
+            client = MQTTClient(client_id, Settings.MQTT_IP)
+            client.connect()
+            break
+        except:
+            time.sleep(1)
+            c += 1
+            if c > 30:
+                machine.reset()
+    print("MQTT: Successfully connected")
 
 _last_heartbit = time.time()
 
