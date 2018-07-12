@@ -83,6 +83,9 @@ def send_file(filename, cl, gzip=False):
             else:
                 break
 
+    sleep(0.1)
+    cl.close()
+
 #  try:
 #  print(machine.disable_irq())
 
@@ -154,25 +157,33 @@ class WebSocketClient:
         self.connection = conn
 
     def process(self):
-        data = self.connection.read()
-        if data:
-            print(data)
+        line = self.connection.read()
+        if not line:
+            return
+
+        cmd = line.decode("utf8").split("/")
+        print(cmd)
+        if cmd[0] in pins.keys():
+            if cmd[1] == '1':
+                if pins[cmd[0]].value() == 1:
+                    pins[cmd[0]].off()
+            else:
+                if pins[cmd[0]].value() == 0:
+                    pins[cmd[0]].on()
 
 
 class WebSocketServer:
-    def __init__(self, page, max_connections=1):
+    def __init__(self, page):
         self._listen_s = None
         self._clients = []
-        self._max_connections = max_connections
         self._page = page
 
-    def _setup_conn(self, port, accept_handler):
+    def start(self, port=80):
         self._listen_s = socket.socket()
         self._listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._listen_s.bind(socket.getaddrinfo('0.0.0.0', port)[0][-1])
         self._listen_s.listen(1)
-        if accept_handler:
-            self._listen_s.setsockopt(socket.SOL_SOCKET, 20, accept_handler)
+        self._listen_s.setsockopt(socket.SOL_SOCKET, 20, self._accept_conn)
         for i in (network.AP_IF, network.STA_IF):
             iface = network.WLAN(i)
             if iface.active():
@@ -182,40 +193,68 @@ class WebSocketServer:
         cl, remote_addr = listen_sock.accept()
         print("Client connection from:", remote_addr)
 
-        if len(self._clients) >= self._max_connections:
-            # Maximum connections limit reached
-            cl.setblocking(True)
-            cl.sendall("HTTP/1.1 503 Too many connections\n\n")
-            cl.sendall("\n")
-            # TODO: Make sure the data is sent before closing
-            sleep(0.1)
+        #  if len(self._clients) >= self._max_connections:
+            #  # Maximum connections limit reached
+            #  cl.setblocking(True)
+            #  cl.sendall("HTTP/1.1 503 Too many connections\n\n")
+            #  cl.sendall("\n")
+            #  # TODO: Make sure the data is sent before closing
+            #  sleep(0.1)
+            #  cl.close()
+            #  return
+
+        cl_file = cl.makefile('rwb', 0)
+        line = cl_file.readline()
+        print(line)
+
+        ws = False
+        if line.startswith(b'GET /ws/'):
+            ws = True
+        else:
+            cmd = line.decode("utf8").split("/")[1:]
+            print(cmd)
+
+        if not ws:
+
+            while True:
+                line = cl_file.readline()
+                if not line or line == b'\r\n':
+                    break
+
+            if cmd[0] == 'jquery.js HTTP':
+                send_file('jquery.js.gz', cl, True)
+            elif cmd[0] == ' HTTP':
+                send_file('index.html', cl)
             cl.close()
             return
 
         try:
             websocket_helper.server_handshake(cl)
         except OSError:
-            # Not a websocket connection, serve webpage
-            self._serve_page(cl)
+            cl.setblocking(True)
+            cl.sendall("HTTP/1.1 503 ws error\n\n")
+            cl.sendall("\n")
+            # TODO: Make sure the data is sent before closing
+            sleep(0.1)
+            cl.close()
             return
-
         self._clients.append(
             WebSocketClient(WebSocketConnection(remote_addr, cl, self.remove_connection))
         )
 
-    def _serve_page(self, sock):
-        try:
-            sock.sendall('HTTP/1.1 200 OK\nConnection: close\nServer: WebSocket Server\nContent-Type: text/html\n')
-            length = os.stat(self._page)[6]
-            sock.sendall('Content-Length: {}\n\n'.format(length))
-            # Process page by lines to avoid large strings
-            with open(self._page, 'r') as f:
-                for line in f:
-                    sock.sendall(line)
-        except OSError:
-            # Error while serving webpage
-            pass
-        sock.close()
+
+    #  def _serve_page(self, sock):
+        #  try:
+            #  sock.sendall('HTTP/1.1 200 OK\nConnection: close\nServer: WebSocket Server\nContent-Type: text/html\n')
+            #  length = os.stat(self._page)[6]
+            #  sock.sendall('Content-Length: {}\n\n'.format(length))
+            #  # Process page by lines to avoid large strings
+            #  with open(self._page, 'r') as f:
+                #  for line in f:
+                    #  sock.sendall(line)
+        #  except OSError:
+            #  pass
+        #  sock.close()
 
     def stop(self):
         if self._listen_s:
@@ -225,11 +264,6 @@ class WebSocketServer:
             client.connection.close()
         print("Stopped WebSocket server.")
 
-    def start(self, port=80):
-        if self._listen_s:
-            self.stop()
-        self._setup_conn(port, self._accept_conn)
-        print("Started WebSocket server.")
 
     def process_all(self):
         for client in self._clients:
