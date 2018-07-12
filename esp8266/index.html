@@ -21,6 +21,22 @@
                 text-align: center;
                 z-index: 1000;
             }
+
+            .reconect{
+                position: absolute;
+                bottom: 0;
+                width: 300px;
+                height: 20px;
+                left: 50%;
+                padding: 5px;
+                border-radius: 10px 10px 0 0;
+                margin-left: -150px;
+                background: #070;
+                color: #fff;
+                font-size: 14px;
+                text-align: center;
+                z-index: 1000;
+            }
             .button{
                 height: 100%;
                 width: 50%;
@@ -129,6 +145,13 @@ window.onload = function() {
         trigger($(this).data("key"), 0)
         $(this).removeClass("button_on")     
     })
+
+    $(".reconect").on(up_event, function(){
+        socket.close()
+        open_socket(function(){})
+    })
+    open_socket(function(){}) 
+
     $(".js_button").addClass("button_ready")     
 }
 </script>
@@ -137,5 +160,6 @@ window.onload = function() {
         <div class="connecting" style="display: none"></div>
         <div class="js_button button" data-key="D1"></div>
         <div class="js_button button" data-key="D2"></div>
+        <div class="reconect"></div>
     </body>
 </html>
