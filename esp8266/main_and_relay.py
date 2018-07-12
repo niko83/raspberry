@@ -25,28 +25,30 @@ for v in pins.values():
 
 def send_file(filename, cl, gzip=False):
     start = 0
-    slc = 2
+    slc = 2000
 
     with open(filename, 'rb') as f:
+        cnt_len = os.stat(filename)[6]
+        cl.sendall('\n'.join([
+            'HTTP/1.1 200 OK',
+            'Connection: close',
+            'Server: WebSocket Server',
+            'Content-Length: {}'.format(cnt_len),
+        ]))
         if gzip:
-            cl.send('\n'.join([
-                'HTTP/1.1 200 OK',
-                #  'Connection: close',
-                #  'Server: WebSocket Server',
-                #  'Content-Type: text/html',
-                'Content-Length: {}'.format(os.stat(filename)[6]),
-                #  'Cache-Control: max-age=3600, must-revalidate',
-                'content-encoding: gzip\n\n'
-            ]))
+            cl.sendall('\ncontent-encoding: gzip\n\n')
+        else:
+            cl.sendall('\n\n')
         while True:
             f.seek(start)
             start += slc
             data = f.read(slc)
             if start % 1000 == 0:
-                print(start)
+                print("%s %.1f" % (filename, (100 * start/cnt_len)), end=" ")
             if data != b'':
-                cl.send(data)
+                cl.sendall(data)
             else:
+                print("%s finish" % filename)
                 break
 
     sleep(0.1)
@@ -78,7 +80,8 @@ class WebSocketConnection:
             self.client_close = True
 
         if not msg_bytes and self.client_close:
-            raise Exception("ClientClosedError")
+            self.close_callback(self)
+            return
 
         return msg_bytes
 
@@ -125,7 +128,7 @@ class WebSocketClient:
                 pin = cmd.pop(0)
                 act = cmd.pop(0)
             except IndexError:
-                pass
+                break
 
             if pin in pins.keys():
                 if act == '1':
@@ -156,6 +159,7 @@ class WebSocketServer:
         print("Client connection from:", remote_addr)
 
         if len(self._clients) >= 10:
+            print("Too many connections.")
             cl.setblocking(True)
             cl.sendall("HTTP/1.1 503 Too many connections\n\n")
             cl.sendall("\n")
@@ -178,10 +182,15 @@ class WebSocketServer:
                 if not line or line == b'\r\n':
                     break
 
-            if 'jquery.js' in path:
-                send_file('jquery.js.gz', cl, True)
-            else:
-                send_file('index.html', cl)
+            try:
+                if 'jquery.js' in path:
+                    send_file('jquery.js.gz', cl, True)
+                elif '/favicon.ico' in path:
+                    send_file('favicon.ico', cl)
+                else:
+                    send_file('index.html', cl)
+            except OSError as e:
+                print("%s %s" % (e, path))
 
             cl.close()
             return

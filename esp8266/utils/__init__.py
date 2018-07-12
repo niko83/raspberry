@@ -58,9 +58,9 @@ print("Client_id: %s" % client_id)
 if Settings.WIFI_AP_ENABLED:
     print("WiFi as AP")
     wlan = network.WLAN(network.AP_IF)
+    wlan.active(True)
     wlan.config(essid=Settings.WIFI_AP[0], password=Settings.WIFI_AP[1])
     wlan.ifconfig(('192.168.0.10', '255.255.255.0', '192.168.0.1', '8.8.8.8'))
-    wlan.active(True)
     print("WLAN config: %s" % repr(wlan.ifconfig()))
 else:
     network.WLAN(network.AP_IF).active(False)
@@ -87,19 +87,20 @@ else:
     else:
         machine.reset()
 
-    c = 0
-    while True:
-        try:
-            print("MQTT: try connect %s, attemp %s" % (Settings.MQTT_IP, c))
-            client = MQTTClient(client_id, Settings.MQTT_IP)
-            client.connect()
-            break
-        except:
-            time.sleep(1)
-            c += 1
-            if c > 30:
-                machine.reset()
-    print("MQTT: Successfully connected")
+    if Settings.MQTT_IP:
+        c = 0
+        while True:
+            try:
+                print("MQTT: try connect %s, attemp %s" % (Settings.MQTT_IP, c))
+                client = MQTTClient(client_id, Settings.MQTT_IP)
+                client.connect()
+                break
+            except:
+                time.sleep(1)
+                c += 1
+                if c > 30:
+                    machine.reset()
+        print("MQTT: Successfully connected")
 
 _last_heartbit = time.time()
 
