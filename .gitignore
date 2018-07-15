@@ -1,3 +1,4 @@
 .ropeproject
 *.pyc
 config.json
+index.html.gz

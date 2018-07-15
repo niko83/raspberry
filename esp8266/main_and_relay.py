@@ -61,17 +61,10 @@ class WebSocketConnection:
     def __init__(self, s):
         self.socket = s
         self.ws = websocket(self.socket, True)
-        self._need_check = False
         s.setblocking(False)
-        s.setsockopt(socket.SOL_SOCKET, 20, self.notify)
-
-    def notify(self, s):
-        self._need_check = True
+        s.setsockopt(socket.SOL_SOCKET, 20, None)
 
     def read(self):
-        if self._need_check:
-            self._check_socket_state()
-
         try:
             return self.ws.readline()
         except AttributeError:
@@ -83,21 +76,9 @@ class WebSocketConnection:
         except OSError:
             self.client_close = True
 
-    def _check_socket_state(self):
-        self._need_check = False
-        sock_str = str(self.socket)
-        state_str = sock_str.split(" ")[1]
-        state = int(state_str.split("=")[1])
-
-        if state == 3:
-            self.client_close = True
-
-    def is_closed(self):
-        return self.socket is None
-
     def close(self):
         print("Closing connection.")
-        self.socket.setsockopt(socket.SOL_SOCKET, 20, None)
+        #  self.socket.setsockopt(socket.SOL_SOCKET, 20, None)
         self.socket.close()
         self.socket = None
         self.ws = None
@@ -111,7 +92,6 @@ class WebSocketClient:
         line = self.connection.read()
         if not line:
             return
-        print(line)
 
         for cmd in line:
             if cmd == ord('1'):
