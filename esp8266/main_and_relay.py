@@ -10,7 +10,7 @@ from websocket import websocket
 from utils import PIN
 import time
 
-#  machine.freq(160000000)
+machine.freq(160000000)
 cnt = 0
 
 pins = {
@@ -60,12 +60,18 @@ def send_file(filename, cl, gzip=False):
 class WebSocketConnection:
     def __init__(self, s):
         self.socket = s
+
+        self.sock_str = str(self.socket)
+
         self.ws = websocket(self.socket, True)
         s.setblocking(False)
         s.setsockopt(socket.SOL_SOCKET, 20, None)
 
     def read(self):
         try:
+
+            if self.sock_str != str(self.socket):
+                self.sock_str = str(self.socket)
             return self.ws.readline()
         except AttributeError:
             print("xxxx2")
@@ -78,7 +84,6 @@ class WebSocketConnection:
 
     def close(self):
         print("Closing connection.")
-        #  self.socket.setsockopt(socket.SOL_SOCKET, 20, None)
         self.socket.close()
         self.socket = None
         self.ws = None
@@ -90,6 +95,7 @@ class WebSocketClient:
 
     def process(self):
         line = self.connection.read()
+
         if not line:
             return
 
@@ -189,6 +195,7 @@ except Exception as e:
 
 print("Free mem: %s" % gc.mem_free())
 start_time = time.time()
+start_time2 = time.time()
 while True:
     cnt += 1
     if time.time() != start_time:

@@ -59,29 +59,33 @@ if ("ontouchstart" in window) {
 
 var socket
 var connecting_interval = null
+var setting_up_conn = false
+// cnt = 0; setInterval(function(){open_socket(function(){cnt += 1; socket.send(1 + (cnt % 4))})}, 1) 
 function open_socket(callback){
+    if (setting_up_conn == true){
+        return
+    }
+
     if (socket && socket.readyState==socket.OPEN){
         callback()
         return
     }
+    setting_up_conn = true
     $('.connecting').empty()
-    var connecting_interval = setTimeout(function(){
-        $('.connecting').show().text('Connecting... ')
-    }, 100)
+    $('.connecting').show().text('Connecting... ')
 
     socket = new WebSocket("ws://"+document.domain+"/ws/");
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
+        setting_up_conn = false
         callback()
-        clearInterval(connecting_interval)
         $('.connecting').hide()
     };
     socket.onmessage = function(event) {
-        clearInterval(connecting_interval)
         console.info(event.data)
     }
     socket.onerror = function(event) {
-        clearInterval(connecting_interval)
+        setting_up_conn = false
         var reason
         if (event.code == 1000){
             reason = "Normal closure, meaning that the purpose for which the connection was established has been fulfilled.";
@@ -115,19 +119,14 @@ function open_socket(callback){
         $('.connecting').html('Connecting error, Code: <b>' + event.code + '</b>. Reason: <b>' + reason + '</b>').show()
     }
     socket.onclose = function(event) {
+        setting_up_conn = false
         console.info("Closed")
     }
 }
 function trigger(key, val){
     var msg = {
-        D1: {
-            _on: '1',
-            _off: '2'
-        },
-        D2: {
-            _on: '3',
-            _off: '4'
-        }
+        D1: {_on: '1', _off: '2'},
+        D2: {_on: '3', _off: '4'}
     }
     open_socket(function(){socket.send(msg[key][val])}) 
 }
