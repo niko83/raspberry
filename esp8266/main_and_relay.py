@@ -8,8 +8,10 @@ import network
 import websocket_helper
 from websocket import websocket
 from utils import PIN
+import time
 
 #  machine.freq(160000000)
+cnt = 0
 
 pins = {
     'D1': machine.Pin(PIN.D1, machine.Pin.OUT),
@@ -25,8 +27,9 @@ for v in pins.values():
 
 def send_file(filename, cl, gzip=False):
     start = 0
-    slc = 2000
+    slc = 3000
 
+    print("Send file: %s" % filename)
     with open(filename, 'rb') as f:
         cnt_len = os.stat(filename)[6]
         cl.sendall('\n'.join([
@@ -44,24 +47,20 @@ def send_file(filename, cl, gzip=False):
             start += slc
             data = f.read(slc)
             if start % 1000 == 0:
-                print("%s %.1f" % (filename, (100 * start/cnt_len)), end=" ")
+                print(".", end="")
             if data != b'':
                 cl.sendall(data)
             else:
-                print("%s finish" % filename)
                 break
 
+    print("Send file finish: %s %s" % (filename, cnt_len))
     sleep(0.1)
 
 
 class WebSocketConnection:
-    def __init__(self, addr, s, close_callback):
-        self.address = addr
+    def __init__(self, s):
         self.socket = s
-        self.close_callback = close_callback
-
         self.ws = websocket(self.socket, True)
-        self.client_close = False
         self._need_check = False
         s.setblocking(False)
         s.setsockopt(socket.SOL_SOCKET, 20, self.notify)
@@ -73,17 +72,10 @@ class WebSocketConnection:
         if self._need_check:
             self._check_socket_state()
 
-        msg_bytes = None
         try:
-            msg_bytes = self.ws.readline()
-        except OSError:
-            self.client_close = True
-
-        if not msg_bytes and self.client_close:
-            self.close_callback(self)
-            return
-
-        return msg_bytes
+            return self.ws.readline()
+        except AttributeError:
+            print("xxxx2")
 
     def write(self, msg):
         try:
@@ -109,8 +101,6 @@ class WebSocketConnection:
         self.socket.close()
         self.socket = None
         self.ws = None
-        if self.close_callback:
-            self.close_callback(self)
 
 
 class WebSocketClient:
@@ -121,22 +111,19 @@ class WebSocketClient:
         line = self.connection.read()
         if not line:
             return
+        print(line)
 
-        cmd = line.decode("utf8").strip("/").split("/")
-        while True:
-            try:
-                pin = cmd.pop(0)
-                act = cmd.pop(0)
-            except IndexError:
-                break
-
-            if pin in pins.keys():
-                if act == '1':
-                    if pins[pin].value() == 1:
-                        pins[pin].off()
-                else:
-                    if pins[pin].value() == 0:
-                        pins[pin].on()
+        for cmd in line:
+            if cmd == ord('1'):
+                pins['D1'].off()
+            elif cmd == ord('2'):
+                pins['D1'].on()
+            elif cmd == ord('3'):
+                pins['D2'].off()
+            elif cmd == ord('4'):
+                pins['D2'].on()
+            else:
+                print("Unknown CMD: %s (%s)" % (cmd, line.decode('utf8')))
 
 
 class WebSocketServer:
@@ -156,17 +143,7 @@ class WebSocketServer:
 
     def _accept_conn(self, listen_sock):
         cl, remote_addr = listen_sock.accept()
-        print("Client connection from:", remote_addr)
-
-        if len(self._clients) >= 10:
-            print("Too many connections.")
-            cl.setblocking(True)
-            cl.sendall("HTTP/1.1 503 Too many connections\n\n")
-            cl.sendall("\n")
-            # TODO: Make sure the data is sent before closing
-            sleep(0.1)
-            cl.close()
-            return
+        print("Client connection from:", remote_addr, end=" ")
 
         cl_file = cl.makefile('rwb', 0)
         path = cl_file.readline()
@@ -188,7 +165,7 @@ class WebSocketServer:
                 elif '/favicon.ico' in path:
                     send_file('favicon.ico', cl)
                 else:
-                    send_file('index.html', cl)
+                    send_file('index.html.gz', cl, True)
             except OSError as e:
                 print("%s %s" % (e, path))
 
@@ -205,9 +182,11 @@ class WebSocketServer:
             sleep(0.1)
             cl.close()
             return
-        self._clients.append(
-            WebSocketClient(WebSocketConnection(remote_addr, cl, self.remove_connection))
-        )
+
+        for c in self._clients:
+            c.connection.close()
+
+        self._clients = [WebSocketClient(WebSocketConnection(cl))]
 
     def stop(self):
         if self._listen_s:
@@ -221,16 +200,25 @@ class WebSocketServer:
         for client in self._clients:
             client.process()
 
-    def remove_connection(self, conn):
-        for client in self._clients:
-            if client.connection is conn:
-                self._clients.remove(client)
-
-server = WebSocketServer()
-print("Free mem: %s" % gc.mem_free())
 try:
-    while True:
-        server.process_all()
+    server = WebSocketServer()
 except Exception as e:
-    print("Unknown Error %s" % e)
+    print("Unknown Error %s %s" % (type(e), e))
     machine.reset()
+
+
+print("Free mem: %s" % gc.mem_free())
+start_time = time.time()
+while True:
+    cnt += 1
+    if time.time() != start_time:
+        start_time = time.time()
+        print(cnt, end=" ")
+        cnt = 0
+
+    try:
+        server.process_all()
+    except Exception as e:
+        print("Recreate server. %s %s" % (type(e), e))
+        server.stop()
+        server = WebSocketServer()
