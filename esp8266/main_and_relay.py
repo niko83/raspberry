@@ -92,15 +92,21 @@ class WebSocketConnection:
 class WebSocketClient:
     def __init__(self, conn):
         self.connection = conn
+        self.last_ping = time.time()
 
     def process(self):
         line = self.connection.read()
 
         if not line:
+            if time.time() - self.last_ping > 2:
+                print("REBOOT, healthcheck has not been received")
+                machine.reset()
             return
 
         for cmd in line:
-            if cmd == ord('1'):
+            if cmd == ord('0'):
+                self.last_ping = time.time()
+            elif cmd == ord('1'):
                 pins['D1'].off()
             elif cmd == ord('2'):
                 pins['D1'].on()
