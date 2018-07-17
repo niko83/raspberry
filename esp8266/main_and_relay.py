@@ -10,7 +10,7 @@ from websocket import websocket
 from utils import PIN, beep
 import time
 
-machine.freq(160000000)
+#  machine.freq(160000000)
 cnt = 0
 
 beep(PIN.D8)
@@ -63,14 +63,17 @@ def send_file(filename, cl, gzip=False):
 
 class WebSocketClient:
 
-    def __init__(self, socket):
-        self.socket = socket
-        if not socket:
+    def __init__(self, s):
+        self.socket = s
+        self.last_ping = time.time()
+        if not self.socket:
             return
         self.ws = websocket(self.socket, True)
         self.socket.setblocking(False)
         self.socket.setsockopt(socket.SOL_SOCKET, 20, None)
-        self.last_ping = time.time()
+
+    def is_fake(self):
+        return not bool(self.socket)
 
     def read(self):
         try:
@@ -92,20 +95,15 @@ class WebSocketClient:
             self.ws = None
 
     def process(self):
-        if not self.socket:
-            if time.time() - self.last_ping > 30:
-                raise HealthCheckError("Trere aren't any connections.")
-
         line = self.read()
-
         if not line:
-            if time.time() - self.last_ping > 2:
+            if time.time() - self.last_ping > 5:
                 raise HealthCheckError("Trere in't a ping from connected client.")
             return
 
         for cmd in line:
             if cmd == ord('0'):
-                print("h")
+                print("p", end="")
                 self.last_ping = time.time()
             elif cmd == ord('1'):
                 pins['D1'].off()
@@ -186,8 +184,6 @@ class WebSocketServer:
         self._ws_client.close()
         print("Stopped WebSocket server.")
 
-    def ws_process(self):
-        self._ws_client.process()
 
 try:
     server = WebSocketServer()
@@ -196,21 +192,29 @@ except Exception as e:
     machine.reset()
 
 start_time = time.time()
+#  last_diff_p = _last_diff = 0
+last_ping = time.time()
 try:
     while True:
+        if server._ws_client.is_fake():
+            if time.time() - last_ping > 20:
+                raise HealthCheckError("Trere aren't any connections.")
+            continue
+        else:
+            last_ping = time.time()
+
         cnt += 1
         if time.time() != start_time:
             start_time = time.time()
-            print("cnt:%s Free mem:%.1f " % (cnt, gc.mem_free() / 1024.0), end="   ")
             cnt = 0
         try:
-            server.ws_process()
+            server._ws_client.process()
         except HealthCheckError:
             raise
         except Exception as e:
             print("Recreate server. %s %s" % (type(e), e))
             server.stop()
             server = WebSocketServer()
-except Exception:
+except Exception as e:
     print("%s %s" % (type(e), e))
     machine.reset()
