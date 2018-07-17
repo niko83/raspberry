@@ -106,6 +106,7 @@ function info(msg){
 }
 function open_socket(callback){
     if (setting_up_conn == true){
+        info("concurent conn")
         return
     }
 
@@ -114,8 +115,7 @@ function open_socket(callback){
         return
     }
     setting_up_conn = true
-    $('.connecting').empty()
-    $('.connecting').show().text('Connecting... ')
+    $('.connecting').text('Connecting... ').show()
 
     socket = new WebSocket("ws://"+document.domain+"/ws/");
     socket.binaryType = 'arraybuffer';

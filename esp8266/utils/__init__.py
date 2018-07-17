@@ -21,6 +21,11 @@ def deepsleep():
     machine.deepsleep()
 
 
+def beep(pin):
+    pwm = machine.PWM(machine.Pin(), freq=500, duty=500)
+    machine.Timer(-1).tim.init(period=0.3, mode=Timer.ONE_SHOT, callback=pwm.deinit)
+
+
 class PIN:
     D0 = 16  # build-in led
     D1 = 5
@@ -105,15 +110,15 @@ else:
                     machine.reset()
         print("MQTT: Successfully connected")
 
-_last_heartbit = time.time()
+_last_mqtt_heartbit = time.time()
 
 
 def check_heartbit(topic):
-    global _last_heartbit
+    global _last_mqtt_heartbit
     topic = topic.decode('utf-8')
     topic = topic.split('/')[-1]
     if topic == "heartbit":
-        _last_heartbit = time.time()
+        _last_mqtt_heartbit = time.time()
 
-    if time.time() - _last_heartbit > 300:
+    if time.time() - _last_mqtt_heartbit > 300:
         return 'ERROR'

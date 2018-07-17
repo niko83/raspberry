@@ -7,15 +7,13 @@ import machine
 import network
 import websocket_helper
 from websocket import websocket
-from utils import PIN
+from utils import PIN, beep
 import time
 
 machine.freq(160000000)
 cnt = 0
 
-asd = machine.PWM(machine.Pin(PIN.D8), freq=500, duty=500)
-sleep(0.3)
-asd.deinit()
+beep(PIN.D8)
 
 
 class HealthCheckError(Exception):
@@ -95,13 +93,14 @@ class WebSocketClient:
 
     def process(self):
         if not self.socket:
-            return
+            if time.time() - self.last_ping > 30:
+                raise HealthCheckError("Trere aren't any connections.")
 
         line = self.read()
 
         if not line:
             if time.time() - self.last_ping > 2:
-                raise HealthCheckError()
+                raise HealthCheckError("Trere in't a ping from connected client.")
             return
 
         for cmd in line:
@@ -193,11 +192,9 @@ class WebSocketServer:
 try:
     server = WebSocketServer()
 except Exception as e:
-    print("Unknown Error %s %s" % (type(e), e))
+    print("Unknown Error while start websocket %s %s" % (type(e), e))
     machine.reset()
 
-
-print("Free mem: %s" % gc.mem_free())
 start_time = time.time()
 try:
     while True:
