@@ -13,16 +13,22 @@ import time
 machine.freq(160000000)
 cnt = 0
 
+asd = machine.PWM(machine.Pin(PIN.D8), freq=500, duty=500)
+sleep(0.3)
+asd.deinit()
+
+
+class HealthCheckError(Exception):
+    pass
+
 pins = {
     'D1': machine.Pin(PIN.D1, machine.Pin.OUT),
     'D2': machine.Pin(PIN.D2, machine.Pin.OUT),
-    #  'D3': machine.Pin(PIN.D3, machine.Pin.OUT),
-    #  'D4': machine.Pin(PIN.D4, machine.Pin.OUT),
 }
 
-# Reverse relay
+
 for v in pins.values():
-    v.on()
+    v.on()  # Reverse relay
 
 
 def send_file(filename, cl, gzip=False):
@@ -46,7 +52,7 @@ def send_file(filename, cl, gzip=False):
             f.seek(start)
             start += slc
             data = f.read(slc)
-            if start % 1000 == 0:
+            if start % 500 == 0:
                 print(".", end="")
             if data != b'':
                 cl.sendall(data)
@@ -57,54 +63,50 @@ def send_file(filename, cl, gzip=False):
     sleep(0.1)
 
 
-class WebSocketConnection:
-    def __init__(self, s):
-        self.socket = s
+class WebSocketClient:
 
-        self.sock_str = str(self.socket)
-
+    def __init__(self, socket):
+        self.socket = socket
+        if not socket:
+            return
         self.ws = websocket(self.socket, True)
-        s.setblocking(False)
-        s.setsockopt(socket.SOL_SOCKET, 20, None)
+        self.socket.setblocking(False)
+        self.socket.setsockopt(socket.SOL_SOCKET, 20, None)
+        self.last_ping = time.time()
 
     def read(self):
         try:
-
-            if self.sock_str != str(self.socket):
-                self.sock_str = str(self.socket)
             return self.ws.readline()
         except AttributeError:
-            print("xxxx2")
+            return
 
     def write(self, msg):
         try:
             self.ws.write(msg)
         except OSError:
-            self.client_close = True
+            print("can not sent %s" % msg)
 
     def close(self):
         print("Closing connection.")
-        self.socket.close()
-        self.socket = None
-        self.ws = None
-
-
-class WebSocketClient:
-    def __init__(self, conn):
-        self.connection = conn
-        self.last_ping = time.time()
+        if self.socket:
+            self.socket.close()
+            self.socket = None
+            self.ws = None
 
     def process(self):
-        line = self.connection.read()
+        if not self.socket:
+            return
+
+        line = self.read()
 
         if not line:
             if time.time() - self.last_ping > 2:
-                print("REBOOT, healthcheck has not been received")
-                machine.reset()
+                raise HealthCheckError()
             return
 
         for cmd in line:
             if cmd == ord('0'):
+                print("h")
                 self.last_ping = time.time()
             elif cmd == ord('1'):
                 pins['D1'].off()
@@ -121,7 +123,7 @@ class WebSocketClient:
 class WebSocketServer:
     def __init__(self):
         self._listen_s = None
-        self._clients = []
+        self._ws_client = WebSocketClient(None)  # fake client
         port = 80
         self._listen_s = socket.socket()
         self._listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -175,22 +177,18 @@ class WebSocketServer:
             cl.close()
             return
 
-        for c in self._clients:
-            c.connection.close()
-
-        self._clients = [WebSocketClient(WebSocketConnection(cl))]
+        self._ws_client.close()
+        self._ws_client = WebSocketClient(cl)
 
     def stop(self):
         if self._listen_s:
             self._listen_s.close()
         self._listen_s = None
-        for client in self._clients:
-            client.connection.close()
+        self._ws_client.close()
         print("Stopped WebSocket server.")
 
-    def process_all(self):
-        for client in self._clients:
-            client.process()
+    def ws_process(self):
+        self._ws_client.process()
 
 try:
     server = WebSocketServer()
@@ -201,17 +199,21 @@ except Exception as e:
 
 print("Free mem: %s" % gc.mem_free())
 start_time = time.time()
-start_time2 = time.time()
-while True:
-    cnt += 1
-    if time.time() != start_time:
-        start_time = time.time()
-        print(cnt, end=" ")
-        cnt = 0
-
-    try:
-        server.process_all()
-    except Exception as e:
-        print("Recreate server. %s %s" % (type(e), e))
-        server.stop()
-        server = WebSocketServer()
+try:
+    while True:
+        cnt += 1
+        if time.time() != start_time:
+            start_time = time.time()
+            print("cnt:%s Free mem:%.1f " % (cnt, gc.mem_free() / 1024.0), end="   ")
+            cnt = 0
+        try:
+            server.ws_process()
+        except HealthCheckError:
+            raise
+        except Exception as e:
+            print("Recreate server. %s %s" % (type(e), e))
+            server.stop()
+            server = WebSocketServer()
+except Exception:
+    print("%s %s" % (type(e), e))
+    machine.reset()

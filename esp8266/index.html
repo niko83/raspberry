@@ -133,6 +133,9 @@ function open_socket(callback){
     }
     socket.onclose = function(event) {
         setting_up_conn = false
+        if (stress_interval != null) {
+            clearInterval(stress_interval)
+        }
         info('ws closed')
     }
 }

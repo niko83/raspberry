@@ -58,7 +58,10 @@ print("Client_id: %s" % client_id)
 if Settings.WIFI_AP_ENABLED:
     print("WiFi as AP")
     wlan = network.WLAN(network.AP_IF)
-    wlan.active(True)
+    try:
+        wlan.active(True)
+    except OSError:
+        machine.reset()
     wlan.config(essid=Settings.WIFI_AP[0], password=Settings.WIFI_AP[1])
     wlan.ifconfig(('192.168.0.10', '255.255.255.0', '192.168.0.1', '8.8.8.8'))
     print("WLAN config: %s" % repr(wlan.ifconfig()))
