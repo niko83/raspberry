@@ -25,5 +25,3 @@ deploy_micropython:
 	sudo pkill picocom; \
 	sudo esptool.py --port /dev/ttyUSB0 erase_flash; \
 	sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20180511-v1.9.4.bin;
-	# sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1 -fm dio 0 esp8266-20171101-v1.9.3.bin;
-	# sudo esptool.py --port /dev/ttyUSB0 --chip esp8266 --baud 460800 write_flash --flash_size=4MB-c1  0 esp8266-20170823-v1.9.2.bin;
