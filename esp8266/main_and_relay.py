@@ -13,7 +13,7 @@ import time
 #  machine.freq(160000000)
 cnt = 0
 
-beep(PIN.D8)
+beep(PIN.D8, 300, 8000)
 
 
 class HealthCheckError(Exception):
@@ -66,6 +66,7 @@ class WebSocketClient:
     def __init__(self, s):
         self.socket = s
         self.last_ping = time.time()
+        self.last_ping_p = time.time()
         if not self.socket:
             return
         self.ws = websocket(self.socket, True)
@@ -97,6 +98,10 @@ class WebSocketClient:
     def process(self):
         line = self.read()
         if not line:
+            if time.time() - self.last_ping > 2:
+                if self.last_ping_p != time.time():
+                    self.last_ping_p = time.time()
+                    beep(PIN.D8, 60, 1000)
             if time.time() - self.last_ping > 5:
                 raise HealthCheckError("Trere in't a ping from connected client.")
             return
@@ -119,18 +124,13 @@ class WebSocketClient:
 
 class WebSocketServer:
     def __init__(self):
-        self._listen_s = None
         self._ws_client = WebSocketClient(None)  # fake client
-        port = 80
         self._listen_s = socket.socket()
         self._listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._listen_s.bind(socket.getaddrinfo('0.0.0.0', port)[0][-1])
+        self._listen_s.bind(socket.getaddrinfo('0.0.0.0', 80)[0][-1])
         self._listen_s.listen(1)
         self._listen_s.setsockopt(socket.SOL_SOCKET, 20, self._accept_conn)
-        for i in (network.AP_IF, network.STA_IF):
-            iface = network.WLAN(i)
-            if iface.active():
-                print("WebSocket started on ws://%s:%d" % (iface.ifconfig()[0], port))
+        print("WebSocket started.")
 
     def _accept_conn(self, listen_sock):
         cl, remote_addr = listen_sock.accept()
@@ -191,21 +191,24 @@ except Exception as e:
     print("Unknown Error while start websocket %s %s" % (type(e), e))
     machine.reset()
 
-start_time = time.time()
-#  last_diff_p = _last_diff = 0
-last_ping = time.time()
+start_time = last_ping = last_beep = time.time()
 try:
     while True:
-        if server._ws_client.is_fake():
-            if time.time() - last_ping > 20:
+        sleep(0.005)
+        t = time.time()
+        if not server._ws_client.is_fake():
+            last_ping = t
+        else:
+            if (last_beep != t) and (t - last_ping > 5):
+                beep(PIN.D8, 30, 200)
+                last_beep = t
+            if t - last_ping > 30:
                 raise HealthCheckError("Trere aren't any connections.")
             continue
-        else:
-            last_ping = time.time()
 
         cnt += 1
-        if time.time() != start_time:
-            start_time = time.time()
+        if t != start_time:
+            start_time = t
             cnt = 0
         try:
             server._ws_client.process()

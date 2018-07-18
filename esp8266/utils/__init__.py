@@ -21,10 +21,17 @@ def deepsleep():
     machine.deepsleep()
 
 
-def beep(pin):
-    return
-    pwm = machine.PWM(machine.Pin(pin), freq=20, duty=20)
-    machine.Timer(-1).init(period=1, mode=machine.Timer.ONE_SHOT, callback=pwm.deinit)
+pwm = None
+
+
+def beep(pin, period=200, freq=410):
+    global pwm
+    pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
+    machine.Timer(-1).init(
+        period=period,
+        mode=machine.Timer.ONE_SHOT,
+        callback=lambda x: pwm.deinit()
+    )
 
 
 class PIN:
