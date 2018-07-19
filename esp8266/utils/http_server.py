@@ -1,6 +1,7 @@
 import socket
 import time
 import os
+import machine
 from websocket import websocket
 
 import websocket_helper
@@ -44,10 +45,11 @@ def _send_file(filename, cl, gzip=False):
 
 
 def _accept_conn(listen_sock):
-    global _client, _ws
+    global _client
+    global _ws
 
     cl, remote_addr = listen_sock.accept()
-    print("Client connection from:", remote_addr, end=" ")
+    print("Client connection from: %s" % str(remote_addr), end=" ")
 
     cl_file = cl.makefile('rwb', 0)
     path = cl_file.readline()
@@ -96,18 +98,23 @@ def _accept_conn(listen_sock):
     _client.setsockopt(socket.SOL_SOCKET, 20, None)
 
 
-def start():
-    global _listen_s
-    listen_s = socket.socket()
-    listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    listen_s.bind(socket.getaddrinfo('0.0.0.0', 80)[0][-1])
+#  def start():
+    #  global _listen_s
+listen_s = socket.socket()
+listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+listen_s.bind(socket.getaddrinfo('0.0.0.0', 80)[0][-1])
+try:
     listen_s.listen(1)
-    listen_s.setsockopt(socket.SOL_SOCKET, 20, _accept_conn)
-    print("WebSocketServer START.")
+except OSError as e:
+    print("RESET %s %s" % (type(e), e))
+    machine.reset()
+listen_s.setsockopt(socket.SOL_SOCKET, 20, _accept_conn)
+print("WebSocketServer START.")
 
 
 def _destroy_client():
-    global _client, _ws
+    global _client
+    global _ws
     _client.close()
     _client = None
     _ws = None
@@ -125,15 +132,14 @@ def restart(e):
     _listen_s = None
     _destroy_client()
 
-    start()
     print("WebSocketServer RECREATE. %s %s" % (type(e), e))
 
 
-class write(msg):
-    try:
-        _ws.write(msg)
-    except (OSError, AttributeError) as e:
-        print("can not sent %s" % msg)
+#  def write(msg):
+    #  try:
+        #  _ws.write(msg)
+    #  except (OSError, AttributeError) as e:
+        #  print("can not sent %s" % msg)
 
 
 def read():

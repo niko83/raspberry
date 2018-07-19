@@ -25,23 +25,6 @@ pwm = None
 beeps = {}
 
 
-def beep(key, pin=PIN.D8, period=200, freq=410):
-    global pwm
-    t = time.time()
-    if key not in beeps:
-        beeps[key] = t
-        return
-
-    if beeps[key] != t:
-        beeps[key] = t
-        pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
-        machine.Timer(-1).init(
-            period=period,
-            mode=machine.Timer.ONE_SHOT,
-            callback=lambda x: pwm.deinit()
-        )
-
-
 class PIN:
     D0 = 16  # build-in led
     D1 = 5
@@ -75,6 +58,25 @@ for p in PIN.map_to_d.keys():
 
 client_id = ubinascii.hexlify(machine.unique_id()).decode("utf-8")
 print("Client_id: %s" % client_id)
+
+
+def beep(key, pin=PIN.D8, period=200, freq=410):
+    return
+    #  global pwm
+    #  t = time.time()
+    #  if key not in beeps:
+        #  beeps[key] = t
+        #  return
+
+    #  if beeps[key] != t:
+        #  print(key)
+        #  beeps[key] = t
+        #  pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
+        #  machine.Timer(-1).init(
+            #  period=period,
+            #  mode=machine.Timer.ONE_SHOT,
+            #  callback=lambda x: pwm.deinit()
+        #  )
 
 if Settings.WIFI_AP_ENABLED:
     print("WiFi as AP")

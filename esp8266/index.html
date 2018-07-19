@@ -169,7 +169,7 @@ window.onload = function() {
             if (stress_interval != null) {
                 clearInterval(stress_interval)
             }
-            stress_interval = setInterval(function(){open_socket(function(){cnt += 1; socket.send(1 + (cnt % 4))})}, 1) 
+            stress_interval = setInterval(function(){open_socket(function(){cnt += 1; socket.send(1 + (cnt % 4))})}, 20) 
             info('Start stress (' + stress_interval + ')')
         })
         ping()
@@ -177,7 +177,7 @@ window.onload = function() {
         $(".js_button").addClass("button_ready")     
     };
     setTimeout(function(){
-        script.src = "https://code.jquery.com/jquery-3.3.1.min.js"
+        script.src = "/jquery.js"
     }, 1000)
     document.head.appendChild(script);
 }

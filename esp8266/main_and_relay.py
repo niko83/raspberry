@@ -21,19 +21,22 @@ for v in pins.values():
 
 last_conn = last_ping_client = time.time()
 
+first_ping = []
 
 def process(line):
     global last_ping_client
     if not line:
         if time.time() - last_ping_client > 2:
             beep('health_ping', period=60, freq=1000)
-            if time.time() - last_ping_client > 5:
+            if time.time() - last_ping_client > 200:
                 raise HealthCheckError("Trere in't a ping from connected client.")
         return
 
     for cmd in line:
         if cmd == ord('0'):
-            print("p", end="")
+            if not first_ping:
+                first_ping.append(time.time())
+            print(time.time() - first_ping[0], end=" ")
             last_ping_client = time.time()
         elif cmd == ord('1'):
             pins['D1'].off()
@@ -46,22 +49,16 @@ def process(line):
         else:
             print("Unknown CMD: %s (%s)" % (cmd, line.decode('utf8')))
 
-
-try:
-    http_server.start()
-except Exception as e:
-    print("Unknown Error while start websocket %s %s" % (type(e), e))
-    machine.reset()
-
 try:
     while True:
+        time.sleep(0.1)
         t = time.time()
         if http_server.has_connection():
             last_conn = t
         else:
             if t - last_conn > 5:
                 beep("no_conn", period=30, freq=200)
-                if t - last_conn > 30:
+                if t - last_conn > 300:
                     raise HealthCheckError("Trere aren't any connections.")
                 continue
 
@@ -69,8 +66,9 @@ try:
             process(http_server.read())
         except HealthCheckError:
             raise
-        except Exception as e:
-            http_server.restart()
+        #  except Exception as e:
+            #  machine.reset()
+            #  http_server.restart(e)
 except Exception as e:
     print("%s %s" % (type(e), e))
     machine.reset()
