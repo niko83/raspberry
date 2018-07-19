@@ -1,5 +1,6 @@
 import network
 import time
+import gc
 import machine
 
 from utils.settings import Settings
@@ -61,22 +62,21 @@ print("Client_id: %s" % client_id)
 
 
 def beep(key, pin=PIN.D8, period=200, freq=410):
-    return
-    #  global pwm
-    #  t = time.time()
-    #  if key not in beeps:
-        #  beeps[key] = t
-        #  return
+    global pwm
+    t = time.time()
+    if key not in beeps:
+        beeps[key] = t
+        return
 
-    #  if beeps[key] != t:
-        #  print(key)
-        #  beeps[key] = t
-        #  pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
-        #  machine.Timer(-1).init(
-            #  period=period,
-            #  mode=machine.Timer.ONE_SHOT,
-            #  callback=lambda x: pwm.deinit()
-        #  )
+    if beeps[key] != t:
+        print("%s (%s)" % (key, gc.mem_free()), end=" ")
+        beeps[key] = t
+        pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
+        machine.Timer(-1).init(
+            period=period,
+            mode=machine.Timer.ONE_SHOT,
+            callback=lambda x: pwm.deinit()
+        )
 
 if Settings.WIFI_AP_ENABLED:
     print("WiFi as AP")

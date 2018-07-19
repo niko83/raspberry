@@ -19,25 +19,29 @@ for v in pins.values():
     v.on()  # Reverse relay
 
 
-last_conn = last_ping_client = time.time()
+last_conn = time.time()
+last_ping_client = 999999
 
 first_ping = []
 
+
 def process(line):
     global last_ping_client
+    t = time.time()
     if not line:
-        if time.time() - last_ping_client > 2:
-            beep('health_ping', period=60, freq=1000)
-            if time.time() - last_ping_client > 200:
+        if t - last_ping_client > 1:
+            beep('health_ping', period=40, freq=1000)
+            if t - last_ping_client > 15:
                 raise HealthCheckError("Trere in't a ping from connected client.")
         return
 
     for cmd in line:
         if cmd == ord('0'):
             if not first_ping:
-                first_ping.append(time.time())
-            print(time.time() - first_ping[0], end=" ")
-            last_ping_client = time.time()
+                first_ping.append(t)
+            if last_ping_client  != t:
+                print(t - first_ping[0], end=" ")
+            last_ping_client = t
         elif cmd == ord('1'):
             pins['D1'].off()
         elif cmd == ord('2'):
@@ -51,14 +55,14 @@ def process(line):
 
 try:
     while True:
-        time.sleep(0.1)
+        time.sleep(0.005)
         t = time.time()
         if http_server.has_connection():
             last_conn = t
         else:
             if t - last_conn > 5:
-                beep("no_conn", period=30, freq=200)
-                if t - last_conn > 300:
+                beep("no_conn", period=20, freq=100)
+                if t - last_conn > 120:
                     raise HealthCheckError("Trere aren't any connections.")
                 continue
 
