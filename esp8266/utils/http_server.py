@@ -98,8 +98,6 @@ def _accept_conn(listen_sock):
     _client.setsockopt(socket.SOL_SOCKET, 20, None)
 
 
-#  def start():
-    #  global _listen_s
 listen_s = socket.socket()
 listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 listen_s.bind(socket.getaddrinfo('0.0.0.0', 80)[0][-1])
@@ -133,13 +131,6 @@ def restart(e):
     _destroy_client()
 
     print("WebSocketServer RECREATE. %s %s" % (type(e), e))
-
-
-#  def write(msg):
-    #  try:
-        #  _ws.write(msg)
-    #  except (OSError, AttributeError) as e:
-        #  print("can not sent %s" % msg)
 
 
 def read():
