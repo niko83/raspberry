@@ -62,7 +62,7 @@
             }
 
             .button{
-                height: 100%;
+                height: 50%;
                 width: 50%;
                 background: lightgray;
                 text-align: center;
@@ -141,7 +141,9 @@ function open_socket(callback){
 function trigger(key, val){
     var msg = {
         D1: {_on: '1', _off: '2'},
-        D2: {_on: '3', _off: '4'}
+        D2: {_on: '3', _off: '4'},
+        D3: {_on: '5', _off: '6'},
+        D4: {_on: '7', _off: '8'}
     }
     open_socket(function(){socket.send(msg[key][val])}) 
 }
@@ -188,7 +190,9 @@ window.onload = function() {
         <div class="connecting" style="display: none"></div>
         <div class="info"></div>
         <div class="js_button button" data-key="D1"></div>
+        <div class="js_button button" data-key="D3"></div>
         <div class="js_button button" data-key="D2"></div>
+        <div class="js_button button" data-key="D4"></div>
 
         <div class="close_current_conn cmd">Socket close</div>
         <div class="start_stress_test cmd">Stress</div>

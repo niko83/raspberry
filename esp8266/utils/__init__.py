@@ -61,14 +61,14 @@ client_id = ubinascii.hexlify(machine.unique_id()).decode("utf-8")
 print("Client_id: %s" % client_id)
 
 
-def beep(key, pin=PIN.D8, period=200, freq=410):
+def beep(key, pin=PIN.D8, period=200, freq=410, limit=True):
     global pwm
     t = time.time()
     if key not in beeps:
         beeps[key] = t
         return
 
-    if beeps[key] != t:
+    if beeps[key] != t or limit is False:
         print("%s (%s)" % (key, gc.mem_free()), end=" ")
         beeps[key] = t
         pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
