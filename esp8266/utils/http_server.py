@@ -14,7 +14,7 @@ _ws = None
 
 def _send_file(filename, cl, gzip=False):
     start = 0
-    slc = 500
+    slc = 1500
 
     print("Send file: %s" % filename)
     with open(filename, 'rb') as f:

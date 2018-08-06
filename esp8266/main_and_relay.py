@@ -8,7 +8,6 @@ class HealthCheckError(Exception):
 
 #  machine.freq(160000000)
 
-beep("start", period=300, freq=800)
 
 pins = {
     'D1': machine.Pin(PIN.D1, machine.Pin.OUT),
@@ -82,13 +81,7 @@ try:
                     raise HealthCheckError("Trere aren't any connections.")
                 continue
 
-        try:
-            process(http_server.read())
-        except HealthCheckError:
-            raise
-        except Exception as e:
-            print("Exception %s %s" % (e, type(e)))
-            machine.reset()
+        process(http_server.read())
 except Exception as e:
     print("%s %s" % (type(e), e))
     machine.reset()

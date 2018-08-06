@@ -66,10 +66,9 @@ def beep(key, pin=PIN.D8, period=200, freq=410, limit=True):
     t = time.time()
     if key not in beeps:
         beeps[key] = t
-        return
 
     if beeps[key] != t or limit is False:
-        print("%s (%s)" % (key, gc.mem_free()), end=" ")
+        print("%s(%.1f)" % (key, gc.mem_free()/1024.0), end=" ")
         beeps[key] = t
         pwm = machine.PWM(machine.Pin(pin), freq=freq, duty=500)
         machine.Timer(-1).init(
@@ -77,6 +76,10 @@ def beep(key, pin=PIN.D8, period=200, freq=410, limit=True):
             mode=machine.Timer.ONE_SHOT,
             callback=lambda x: pwm.deinit()
         )
+
+beep("start", period=100, freq=600, limit=False)
+time.sleep(0.10)
+
 
 if Settings.WIFI_AP_ENABLED:
     print("WiFi as AP")
@@ -102,6 +105,7 @@ else:
         wlan.connect(wifi_name, wifi_pass)
         c = 0
         while c < 10:
+            beep("wifi_conn", period=5, freq=1000, limit=False)
             if wlan.isconnected():
                 break
             c += 1
@@ -111,12 +115,14 @@ else:
     if wlan.isconnected():
         print("WLAN config: %s" % repr(wlan.ifconfig()))
     else:
+        print("WLAN in not connected. Bye, bye..")
         machine.reset()
 
     if Settings.MQTT_IP:
         c = 0
         while True:
             try:
+                beep("wifi_conn", period=5, freq=800, limit=False)
                 print("MQTT: try connect %s, attemp %s" % (Settings.MQTT_IP, c))
                 client = MQTTClient(client_id, Settings.MQTT_IP)
                 client.connect()
