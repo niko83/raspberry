@@ -16,7 +16,7 @@ def _send_file(filename, cl, gzip=False):
     start = 0
     slc = 1500
 
-    print("Send file: %s" % filename)
+    print("start sending file: %s" % filename)
     with open(filename, 'rb') as f:
         cnt_len = os.stat(filename)[6]
         cl.sendall('\n'.join([
@@ -49,7 +49,7 @@ def _accept_conn(listen_sock):
     global _ws
 
     cl, remote_addr = listen_sock.accept()
-    print("Client connection from: %s" % str(remote_addr), end=" ")
+    print("\nClient connection from: %s" % str(remote_addr), end=" ")
 
     cl_file = cl.makefile('rwb', 0)
     path = cl_file.readline()

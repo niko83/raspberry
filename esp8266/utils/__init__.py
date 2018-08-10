@@ -112,6 +112,9 @@ else:
             time.sleep(1)
             print("WLAN attemp: %s" % c)
 
+        if wlan.isconnected():
+            break
+
     if wlan.isconnected():
         print("WLAN config: %s" % repr(wlan.ifconfig()))
     else:
