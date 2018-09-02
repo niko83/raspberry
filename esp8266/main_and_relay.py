@@ -1,5 +1,5 @@
 import machine
-from utils import PIN, beep, http_server
+from utils import PIN, beep, http_server, flash
 import time
 
 
@@ -49,6 +49,7 @@ def process(line):
             if last_ping_client != t:
                 print(t - first_ping[0], end=" ")
             last_ping_client = t
+            flash()
         elif cmd == ord('1'):
             pins['D1'].off()
         elif cmd == ord('2'):

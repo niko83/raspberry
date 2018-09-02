@@ -52,6 +52,9 @@ def _accept_conn(listen_sock):
     print("\nClient connection from: %s" % str(remote_addr), end=" ")
 
     cl_file = cl.makefile('rwb', 0)
+    #  path = cl_file.read()
+    #  print(path)
+
     path = cl_file.readline()
     print(path)
 
@@ -69,7 +72,8 @@ def _accept_conn(listen_sock):
             if 'jquery.js' in path:
                 _send_file('jquery.js.gz', cl, True)
             elif '/favicon.ico' in path:
-                _send_file('favicon.ico', cl)
+                pass
+                #  _send_file('favicon.ico', cl)
             else:
                 _send_file('index.html.gz', cl, True)
         except OSError as e:
@@ -99,6 +103,7 @@ def _accept_conn(listen_sock):
 
 
 listen_s = socket.socket()
+listen_s.settimeout(2)
 listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 listen_s.bind(socket.getaddrinfo('0.0.0.0', 80)[0][-1])
 try:

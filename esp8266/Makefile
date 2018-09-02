@@ -10,7 +10,7 @@ deploy_static:
 	gzip -k -9 -f index.html;
 	sudo ampy --port /dev/ttyUSB0 put index.html.gz /index.html.gz;
 	# sudo ampy --port /dev/ttyUSB0 put favicon.ico /favicon.ico;
-	#sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put jquery.js.gz /jquery.js.gz; 
+	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put jquery.js.gz /jquery.js.gz; 
 ls:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 ls
 run:

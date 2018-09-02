@@ -61,6 +61,15 @@ client_id = ubinascii.hexlify(machine.unique_id()).decode("utf-8")
 print("Client_id: %s" % client_id)
 
 
+def flash(pin=PIN.D5, period=100):
+    flsh = machine.Pin(pin, machine.Pin.OUT)
+    flsh.on()
+    machine.Timer(-1).init(
+        period=period,
+        mode=machine.Timer.ONE_SHOT,
+        callback=lambda x: flsh.off(),
+    )
+
 def beep(key, pin=PIN.D8, period=200, freq=410, limit=True):
     global pwm
     t = time.time()
