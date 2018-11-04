@@ -58,3 +58,9 @@ sudo pip install  supervisor
 sudo pip install docker-compose
 sudo apt-get install python python-pip build-essential python-dev libcairo2-dev libffi-dev
 ```
+
+```
+docker pull tobi312/rpi-nginx
+mkdir -p /home/pi/html && mkdir -p /home/pi/.config/nginx && touch /home/pi/.config/nginx/default.conf
+docker run --name nginx -d -p 80:80 -p 443:443 --link some-php-fpm-container:phphost -v /home/pi/.ssl:/etc/nginx/ssl:ro -v /home/pi/.config/nginx:/etc/nginx/conf.d:ro -v /home/pi/html:/var/www/html tobi312/rpi-nginx
+```

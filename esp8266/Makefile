@@ -6,6 +6,7 @@ deploy_utils:
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 rmdir /utils; sudo ampy --port /dev/ttyUSB0 put utils /utils;
 deploy_config: 
 	sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put config.json /config.json;
+	# sudo pkill picocom; sudo ampy --port /dev/ttyUSB0 put x /config.json;
 deploy_static: 
 	gzip -k -9 -f index.html;
 	sudo ampy --port /dev/ttyUSB0 put index.html.gz /index.html.gz;
